@@ -1,1 +1,3 @@
-# foc-engine
+# FOC engine
+
+Let's make Starknet magic!
