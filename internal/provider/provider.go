@@ -15,13 +15,19 @@ type Provider struct {
 
 var StarknetProvider *Provider
 
-func InitProvider() {
+func InitProvider() error {
   // Connect to the WebSocket server
-  u := url.URL{Scheme: "ws", Host: config.Conf.Rpc.Host, Path: "/ws"}
+  wsURL := "ws://" + config.Conf.Rpc.Host + "/ws"
+  u, err := url.Parse(wsURL)
+  fmt.Println("Connecting to WebSocket server at", u.String())
   conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
   if err != nil {
     fmt.Println("Error connecting to WebSocket:", err)
-    return
+    StarknetProvider = &Provider{
+      RpcHost: config.Conf.Rpc.Host,
+      WebSocketConn: nil,
+    }
+    return err
   }
 
   // Create a new Provider instance
@@ -30,6 +36,7 @@ func InitProvider() {
     WebSocketConn: conn,
   }
   fmt.Println("Connected to WebSocket server at", u.String())
+  return nil
 }
 
 func Close() {

@@ -40,7 +40,7 @@ func SubscribeNewHeads() {
   fmt.Println("WebSocket connection established for new heads subscription")
 }
 
-func SubscribeEvents() {
+func SubscribeEvents() error {
   call := StarknetRpcCall{
     ID:      1,
     Jsonrpc: "2.0",
@@ -55,13 +55,17 @@ func SubscribeEvents() {
   callBytes, err := json.Marshal(call)
   if err != nil {
     fmt.Println("Error marshalling call to JSON:", err)
-    return
+    return err
   }
   
+  if StarknetProvider.WebSocketConn == nil {
+    fmt.Println("WebSocket connection is nil")
+    return fmt.Errorf("WebSocket connection is nil")
+  }
   err = StarknetProvider.WebSocketConn.WriteMessage(websocket.TextMessage, callBytes)
   if err != nil {
     fmt.Println("Error writing message to WebSocket:", err)
-    return
+    return err
   }
   fmt.Println("Message sent to WebSocket:", call)
 
@@ -70,10 +74,11 @@ func SubscribeEvents() {
       _, message, err := StarknetProvider.WebSocketConn.ReadMessage()
       if err != nil {
         fmt.Println("Error reading message from WebSocket:", err)
-        return
+        return 
       }
       fmt.Println("Received message from WebSocket:", string(message))
     }
   }()
   fmt.Println("WebSocket connection established for event subscription")
+  return nil
 }

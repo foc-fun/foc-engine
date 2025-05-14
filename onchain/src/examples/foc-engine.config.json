@@ -1,0 +1,12 @@
+{
+  "contracts": [
+    {
+      "name": "Basic Example",
+      "class_name": "BasicContract",
+      "constructor_args": [
+        "0x01",
+        "0x02"
+      ]
+    }
+  ]
+}

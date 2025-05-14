@@ -21,11 +21,6 @@ func main() {
     os.Exit(1)
   }
   defer provider.Close()
-  err = provider.SubscribeEvents()
-  if err != nil {
-    fmt.Println("Error subscribing to events:", err)
-    os.Exit(1)
-  }
 
   interrupt := make(chan os.Signal, 1)
   signal.Notify(interrupt, os.Interrupt)
