@@ -4,8 +4,11 @@
       "name": "Basic Example",
       "class_name": "BasicContract",
       "constructor_args": [
-        "0x01",
-        "0x02"
+        "0x01"
+      ],
+      "init_commands": [
+        "init_command1.sh",
+        "init_command2.sh"
       ]
     }
   ]

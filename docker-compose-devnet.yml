@@ -17,7 +17,7 @@ services:
     command: mongod
     volumes:
       - mongo:/data/db
-  backend:
+  api:
     build:
       dockerfile: dockerfiles/Dockerfile.api
       context: .

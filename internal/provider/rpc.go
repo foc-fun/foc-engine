@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/b-j-roberts/foc-engine/internal/config"
 )
@@ -85,4 +86,93 @@ func GetStarknetLatestBlockNumber() (uint64, error) {
   }
 
   return uint64(blockNumber), nil
+}
+
+type ContractClass struct {
+	// TODO: SierraProgram []string `json:"sierra_program"`
+	// TODO: SierraProgramDebugInfo
+	// TODO: ContractClassVersion
+	// TODO: EntryPointsByType
+	Abi []interface{} `json:"abi"`
+}
+
+func GetStarknetClassAt(address string) (*ContractClass, error) {
+  // Create a new StarknetRpcCall object
+  call := StarknetRpcCall{
+    ID:      1,
+    Jsonrpc: "2.0",
+    Method:  "starknet_getClassAt",
+    Params: []interface{}{
+      "latest",
+      address,
+    },
+  }
+
+  // Marshal the call to JSON
+  jsonData, err := json.Marshal(call)
+  if err != nil {
+    return nil, err
+  }
+
+  // Send the request to the Starknet RPC endpoint
+  url := "http://" + config.Conf.Rpc.Host
+  resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+  if err != nil {
+    return nil, err
+  }
+  defer resp.Body.Close()
+
+  // Read the response body
+  body, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    return nil, err
+  }
+  fmt.Println("body", string(body))
+  // Example:
+  // "abi": "[{\"type\":\"impl\",\"name\":\"Point\",\"size\":1,\"offset\":0,\"members\":[{\"type\":\"felt\",\"name\":\"x\"}]}]" ->
+  // "abi": [{"type":"impl","name":"Point","size":1,"offset":0,"members":[{"type":"felt","name":"x"}]}]
+  // Remove all \ characters from the response body
+  body = bytes.ReplaceAll(body, []byte("\\\""), []byte("\""))
+  // Remove quotes around abi
+  body = bytes.ReplaceAll(body, []byte("\"["), []byte("["))
+  body = bytes.ReplaceAll(body, []byte("]\""), []byte("]"))
+  fmt.Println("body2", string(body))
+
+  // Unmarshal the response into a StarknetRpcResponse object
+  var response StarknetRpcResponse
+  if err := json.Unmarshal(body, &response); err != nil {
+    return nil, err
+  }
+  // Check for errors in the response
+  if response.Error != nil {
+    return nil, fmt.Errorf("error from server: %v", response.Error)
+  }
+
+  // Extract the contract class from the result
+  contractClass := response.Result
+  fmt.Println("contractClass", contractClass)
+
+  // TODO
+  // Output the contract class to a file for debugging
+  filename := fmt.Sprintf("contract_class_%s.json", address)
+  contractClassJson, err := json.MarshalIndent(contractClass, "", "  ")
+  if err != nil {
+    fmt.Println("Error marshalling contract class to JSON:", err)
+    return nil, err
+  }
+  err = os.WriteFile(filename, contractClassJson, 0644)
+  if err != nil {
+    fmt.Println("Error writing contract class to file:", err)
+    return nil, err
+  }
+
+  // Convert the contract class to a ContractClass object
+  abi, ok := contractClass.(map[string]interface{})["abi"].([]interface{})
+  if !ok {
+    return nil, fmt.Errorf("invalid result format, abi not found")
+  }
+  contractClassObj := &ContractClass{
+    Abi: abi,
+  }
+  return contractClassObj, nil
 }

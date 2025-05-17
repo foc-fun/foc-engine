@@ -11,8 +11,25 @@ type RpcConfig struct {
   Host string `yaml:"Host"`
 }
 
+type ApiConfig struct {
+  Host string `yaml:"Host"`
+  Port int `yaml:"Port"`
+  AllowOrigins []string `yaml:"AllowOrigins"`
+  AllowMethods []string `yaml:"AllowMethods"`
+  AllowHeaders []string `yaml:"AllowHeaders"`
+  Production bool `yaml:"Production"`
+  Admin     bool `yaml:"Admin"`
+}
+
+type IndexerConfig struct {
+  Host string `yaml:"Host"`
+  Port int `yaml:"Port"`
+}
+
 type Config struct {
   Rpc RpcConfig `yaml:"Rpc"`
+  Api ApiConfig `yaml:"Api"`
+  Indexer IndexerConfig `yaml:"Indexer"`
 }
 
 var Conf *Config

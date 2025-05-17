@@ -51,12 +51,19 @@ if [ "$APP_COUNT" -eq 0 ]; then
   exit 0
 fi
 
+# Clear .foc_env file
+if [ -f .foc_env ]; then
+  rm -f .foc_env
+fi
+touch .foc_env
+
 echo "Deploying App contracts to devnet"
 for entry in $(echo $APPS | jq -r '. | @base64'); do
   _jq() {
     echo ${entry} | base64 --decode | jq -r ${1}
   }
   APP_NAME=$(_jq '.name')
+  APP_NAME_UPPER_UNDERSCORE=$(echo $APP_NAME | tr '[:lower:]' '[:upper:]' | tr '-' '_' | tr ' ' '_')
   APP_CLASS_NAME=$(_jq '.class_name')
   APP_CONSTRUCTOR_ARGS_RAW=$(_jq '.constructor_args[]' | tr '\n' ' ')
   APP_CONSTRUCTOR_ARGS=$(echo $APP_CONSTRUCTOR_ARGS_RAW | sed "s/\$ACCOUNT/$DEVNET_ACCOUNT_ADDRESS/g")
@@ -73,6 +80,8 @@ for entry in $(echo $APPS | jq -r '. | @base64'); do
   APP_DEPLOY_RESULT=$(cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json deploy --url $RPC_URL --class-hash $APP_CLASS_HASH --constructor-calldata "$APP_CONSTRUCTOR_ARGS" | tail -n 1)
   APP_CONTRACT_ADDRESS=$(echo $APP_DEPLOY_RESULT | jq -r '.contract_address')
   echo "Deployed contract address: $APP_CONTRACT_ADDRESS"
+  # TODO: Change where this is stored
+  echo "${APP_NAME_UPPER_UNDERSCORE}_CONTRACT_ADDRESS=$APP_CONTRACT_ADDRESS" >> .foc_env
 
   # TODO: Use other methods exposed by the registry?
   echo "Registering contract \"$APP_CLASS_NAME\" to foc registry"

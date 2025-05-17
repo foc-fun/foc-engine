@@ -7,7 +7,10 @@ import (
 	"time"
 
 	"github.com/b-j-roberts/foc-engine/internal/config"
+	"github.com/b-j-roberts/foc-engine/internal/db/mongo"
 	"github.com/b-j-roberts/foc-engine/internal/provider"
+	"github.com/b-j-roberts/foc-engine/internal/registry"
+	"github.com/b-j-roberts/foc-engine/routes"
 )
 
 func main() {
@@ -15,17 +18,16 @@ func main() {
 
   // Sleep for 10 seconds
   time.Sleep(10 * time.Second)
-  err := provider.InitProvider()
+  err := provider.InitProvider(registry.ProcessStarknetEventData)
   if err != nil {
     fmt.Println("Error initializing provider:", err)
     os.Exit(1)
   }
   defer provider.Close()
-  err = provider.SubscribeEvents()
-  if err != nil {
-    fmt.Println("Error subscribing to events:", err)
-    os.Exit(1)
-  }
+
+  mongo.InitMongoDB()
+
+  routes.StartServer(config.Conf.Indexer.Host, config.Conf.Indexer.Port)
 
   interrupt := make(chan os.Signal, 1)
   signal.Notify(interrupt, os.Interrupt)

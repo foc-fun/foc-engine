@@ -1,2 +1,20 @@
 Rpc:
   Host: starknet-devnet:5050
+Api:
+  Host: api
+  Port: 8080
+  AllowOrigins:
+    - '*'
+  AllowMethods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+  AllowHeaders:
+    - Content-Type
+  Production: false
+  Admin: true
+Indexer:
+  Host: indexer
+  Port: 8081
