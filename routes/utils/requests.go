@@ -28,4 +28,3 @@ func ReadJsonBody[bodyType any](r *http.Request) (*bodyType, error) {
 
 	return &body, nil
 }
-

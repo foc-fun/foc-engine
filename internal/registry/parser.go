@@ -3,39 +3,129 @@ package registry
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/NethermindEth/starknet.go/contracts"
+	"github.com/NethermindEth/starknet.go/utils"
 )
 
-func GetEventTypeName(eventSelector string, abi interface{}) (string, error) {
-  if abi == nil {
-    return "", fmt.Errorf("abi is nil")
-  }
-  for _, event := range abi.([]interface{}) {
-  }
-  return "", fmt.Errorf("event not found")
+func GetEventTypeName(eventSelector string, abi []interface{}) (string, error) {
+	if abi == nil {
+		return "", fmt.Errorf("abi is nil")
+	}
+	/*
+	  var nestedAbi contracts.NestedString
+	  if err := nestedAbi.UnmarshalJSON([]byte(abi)); err != nil {
+	    return "", fmt.Errorf("failed to unmarshal abi: %v", err)
+	  }
+	  fmt.Println("Nested ABI:", nestedAbi)
+	*/
+	for _, abiEntry := range abi {
+		fmt.Println("ABI Entry:", abiEntry)
+		checkABI, ok := abiEntry.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		abiType, ok := checkABI["type"].(string)
+		if !ok {
+			continue
+		}
+		switch abiType {
+		case string(contracts.ABITypeConstructor), string(contracts.ABITypeFunction), string(contracts.ABITypeL1Handler):
+			fmt.Println("ABI Function Entry:", abiEntry)
+		case string(contracts.ABITypeStruct):
+			fmt.Println("ABI Struct Entry:", abiEntry)
+		case string(contracts.ABITypeEvent):
+			fmt.Println("ABI Event Entry:", abiEntry)
+			// Example output for event types
+			/*
+			   indexer-1          | ABI Event Entry: map[kind:enum name:pow_game::pow::PowGame::Event type:event variants:[map[kind:nested name:ChainUnlocked type:pow_game::pow::PowGame::ChainUnlocked] map[kind:nested name:BalanceUpdated type:pow_game::pow::PowGame::BalanceUpdated] map[kind:nested name:TransactionAdded type:pow_game::actions::TransactionAdded] map[kind:nested name:BlockMined type:pow_game::actions::BlockMined] map[kind:nested name:DAStored type:pow_game::actions::DAStored] map[kind:nested name:ProofStored type:pow_game::actions::ProofStored] map[kind:flat name:UpgradeEvent type:pow_game::upgrades::component::PowUpgradesComponent::Event] map[kind:flat name:TransactionEvent type:pow_game::transactions::component::PowTransactionsComponent::Event] map[kind:flat name:PrestigeEvent type:pow_game::prestige::component::PrestigeComponent::Event] map[kind:flat name:BuilderEvent type:pow_game::builder::component::BuilderComponent::Event]]]
+
+			*/
+			// If event entry ends with "<ContractName::EventName>" ending
+			//if stringEndsWith(checkABI["name"].(string), "::"+ContractName+"::Event") {
+			if stringEndsWith(checkABI["name"].(string), "::Event") {
+				// Loop through variants
+				for _, variant := range checkABI["variants"].([]interface{}) {
+					variantEntry, ok := variant.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					variantName, ok := variantEntry["name"].(string)
+					if !ok {
+						continue
+					}
+					// Check if variant name is the same as event selector
+					fmt.Printf("Checking if variant name %s w/ selector %s is the same as event selector %s\n", variantName, utils.GetSelectorFromNameFelt(variantName).String(), eventSelector)
+					if utils.GetSelectorFromNameFelt(variantName).String() == eventSelector {
+						fmt.Printf("Found event %s with selector %s\n", variantName, eventSelector)
+						variantType, ok := variantEntry["type"].(string)
+						if !ok {
+							continue
+						}
+						// Remove prefix from variantType
+						// Example: "pow_game::pow::PowGame::ChainUnlocked" -> "ChainUnlocked"
+						//variantType = variantType[strings.LastIndex(variantType, "::")+2:]
+						return variantType, nil
+					}
+				}
+			}
+		default:
+			fmt.Println("Unknown ABI Entry:", abiEntry)
+		}
+	}
+
+	return "", fmt.Errorf("event not found")
 }
 
 // TODO: Check valid data
 // TODO: Parse data based on type
-func StarknetTypeDataMin(typeName string, abi interface{}, data []string) interface{} {
+func StarknetTypeDataMin(typeName string, abis []interface{}, data []string) (interface{}, int) {
+	fmt.Println("Type name:", typeName, "Data:", data)
 	if IsPrimitiveType(typeName) {
-		return StarknetStringToTypedData(typeName, data[0])
+		fmt.Println("Primitive type:", typeName)
+		return StarknetStringToTypedData(typeName, data[0]), 1
 	} else if IsArrayType(typeName) {
-		return data
+		fmt.Println("Array type:", typeName)
+		arrayType := GetArrayInnerType(typeName)
+		arrayLen, err := strconv.ParseUint(data[0], 0, 32)
+		data = data[1:]
+		if err != nil {
+			fmt.Println("Error parsing array length:", err)
+			return nil, 0
+		}
+		var arrayData []interface{}
+		var totalOffset int
+		for i := 0; i < int(arrayLen); i++ {
+			fmt.Println("Array element:", i)
+			value, offset := StarknetTypeDataMin(arrayType, abis, data)
+			arrayData = append(arrayData, value)
+			data = data[offset:]
+			totalOffset += offset
+			fmt.Println("Parsed array element:", value)
+		}
+		fmt.Println("Parsed array:", arrayData)
+		return arrayData, totalOffset
 	} else if IsStructType(typeName) {
 		fields := map[string]interface{}{}
-		for _, abi := range abi.([]interface{}) {
+		totalOffset := 0
+		for _, abi := range abis {
 			if abi.(map[string]interface{})["name"] == typeName ||
 				stringEndsWith(abi.(map[string]interface{})["name"].(string), "::"+typeName) {
-				for i, member := range abi.(map[string]interface{})["members"].([]interface{}) {
+				for _, member := range abi.(map[string]interface{})["members"].([]interface{}) {
 					memberName := member.(map[string]interface{})["name"]
-					fields[memberName.(string)] = StarknetTypeDataMin(member.(map[string]interface{})["type"].(string), abi, []string{data[i]})
+					fmt.Println("Member name:", memberName)
+					value, offset := StarknetTypeDataMin(member.(map[string]interface{})["type"].(string), abis, data)
+					fields[memberName.(string)] = value
+					data = data[offset:]
+					totalOffset += offset
+					fmt.Println("Parsed field:", fields[memberName.(string)])
 				}
 				break
 			}
 		}
-		return fields
+		return fields, totalOffset
 	}
-	return nil
+	return nil, 0
 }
 
 func StarknetStringToTypedData(typeName string, data string) interface{} {
@@ -50,11 +140,30 @@ func StarknetStringToTypedData(typeName string, data string) interface{} {
 
 func IsArrayType(typeName string) bool {
 	for _, array := range Types.Array {
-		if typeName == array.Type || stringStartsWith(typeName, array.Type+"<") {
+		if typeName == array.Type ||
+			stringStartsWith(typeName, array.Type+"<") ||
+			stringStartsWith(typeName, array.Type+"::<") {
 			return true
 		}
 	}
 	return false
+}
+
+func GetArrayInnerType(typeName string) string {
+	for _, array := range Types.Array {
+		if stringStartsWith(typeName, array.Type+"<") {
+			start := len(array.Type) + 1
+			end := len(typeName) - 1
+			return typeName[start:end]
+		} else if stringStartsWith(typeName, array.Type+"::<") {
+			start := len(array.Type) + 3
+			end := len(typeName) - 1
+			return typeName[start:end]
+		} else if typeName == array.Type {
+			return array.Type
+		}
+	}
+	return ""
 }
 
 func IsStructType(typeName string) bool {
@@ -152,8 +261,26 @@ var Types = TypesInfo{
 			Type: "core::span::Span",
 			Name: "span",
 		},
+		{
+			Type: "core::array::Span",
+			Name: "span",
+		},
+		{
+			Type: "@core::array::Array",
+			Name: "array",
+		},
+		{
+			Type: "@core::span::Span",
+			Name: "span",
+		},
+		{
+			Type: "@core::array::Span",
+			Name: "span",
+		},
 	},
 }
+
+// TODO: Improve "snapshot" types
 
 func stringStartsWith(s string, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
@@ -193,14 +320,15 @@ var StarknetTypeParsers = map[string]func(string, string) interface{}{
 		return val
 	},
 	"core::integer::u64": func(typeName string, data string) interface{} {
-		val, err := strconv.ParseUint(data, 16, 64)
+		val, err := strconv.ParseUint(data, 0, 64)
 		if err != nil {
 			return nil
 		}
 		return val
 	},
 	"core::integer::u128": func(typeName string, data string) interface{} {
-		val, err := strconv.ParseUint(data, 0, 128)
+		// TODO: not u128
+		val, err := strconv.ParseUint(data, 0, 64)
 		if err != nil {
 			return nil
 		}

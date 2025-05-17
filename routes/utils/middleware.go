@@ -32,4 +32,3 @@ func AdminMiddleware(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 }
-

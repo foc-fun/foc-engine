@@ -76,4 +76,3 @@ func ReadJsonResponse[targetType any](r *http.Response) (*targetType, error) {
 	}
 	return &target, nil
 }
-
