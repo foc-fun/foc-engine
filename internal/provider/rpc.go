@@ -128,7 +128,6 @@ func GetStarknetClassAt(address string) (*ContractClass, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("body", string(body))
 	// Example:
 	// "abi": "[{\"type\":\"impl\",\"name\":\"Point\",\"size\":1,\"offset\":0,\"members\":[{\"type\":\"felt\",\"name\":\"x\"}]}]" ->
 	// "abi": [{"type":"impl","name":"Point","size":1,"offset":0,"members":[{"type":"felt","name":"x"}]}]
@@ -137,7 +136,6 @@ func GetStarknetClassAt(address string) (*ContractClass, error) {
 	// Remove quotes around abi
 	body = bytes.ReplaceAll(body, []byte("\"["), []byte("["))
 	body = bytes.ReplaceAll(body, []byte("]\""), []byte("]"))
-	fmt.Println("body2", string(body))
 
 	// Unmarshal the response into a StarknetRpcResponse object
 	var response StarknetRpcResponse
@@ -151,7 +149,6 @@ func GetStarknetClassAt(address string) (*ContractClass, error) {
 
 	// Extract the contract class from the result
 	contractClass := response.Result
-	fmt.Println("contractClass", contractClass)
 
 	// TODO
 	// Output the contract class to a file for debugging

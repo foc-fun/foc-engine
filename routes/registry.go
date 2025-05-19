@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/b-j-roberts/foc-engine/internal/provider"
@@ -10,6 +11,7 @@ import (
 
 func InitRegistryRoutes() {
 	http.HandleFunc("/registry/add-registry-contract", AddRegistryContract)
+	http.HandleFunc("/registry/get-registry-contracts", GetRegistryContracts)
 }
 
 func AddRegistryContract(w http.ResponseWriter, r *http.Request) {
@@ -37,4 +39,23 @@ func AddRegistryContract(w http.ResponseWriter, r *http.Request) {
 	registry.AddRegistryAddress(registryContractAddress)
 
 	routeutils.WriteResultJson(w, "Registry contract added successfully")
+}
+
+func GetRegistryContracts(w http.ResponseWriter, r *http.Request) {
+	// RegistryAddresses  map[string]bool
+	registeredContractsMap := registry.FocRegistry.RegistryAddresses
+	registeredContracts := make([]string, 0, len(registeredContractsMap))
+	for address := range registeredContractsMap {
+		registeredContracts = append(registeredContracts, address)
+	}
+	resultJson := map[string]interface{}{
+		"registry_contracts": registeredContracts,
+	}
+	resultJsonBytes, err := json.Marshal(resultJson)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to marshal JSON")
+		return
+	}
+
+	routeutils.WriteDataJson(w, string(resultJsonBytes))
 }

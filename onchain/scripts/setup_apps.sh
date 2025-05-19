@@ -64,14 +64,11 @@ for entry in $(echo $APPS | jq -r '. | @base64'); do
     echo "No setup commands found for $APP_NAME"
     continue
   fi
-  echo "Found setup commands for $APP_NAME: $APP_SETUP_COMMANDS"
-  APP_SETUP_COMMANDS_COUNT=$(_jq -r '.init_commands | length')
-  echo "1Found $APP_SETUP_COMMANDS_COUNT setup commands for $APP_NAME"
+  APP_SETUP_COMMANDS_COUNT=$(_jq '.init_commands|length')
   if [ "$APP_SETUP_COMMANDS_COUNT" -eq 0 ]; then
     echo "No setup commands found for $APP_NAME"
     continue
   fi
-  echo "2Found $APP_SETUP_COMMANDS_COUNT setup commands for $APP_NAME"
   APP_CONSTRUCTOR_ARGS_RAW=$(_jq '.constructor_args[]' | tr '\n' ' ')
   APP_CONSTRUCTOR_ARGS=$(echo $APP_CONSTRUCTOR_ARGS_RAW | sed "s/\$ACCOUNT/$DEVNET_ACCOUNT_ADDRESS/g")
   # TODO: Other replacements

@@ -54,4 +54,3 @@ echo "Deployed contract address: $FOC_REGISTRY_CONTRACT_ADDRESS"
 # POW_DEPLOY_OUTPUT=$(starkli deploy --rpc $RPC_URL --private-key $DEVNET_ACCOUNT_PRIVATE_KEY $POW_CONTRACT_CLASSHASH $CALLDATA > $LOG_DIR/deploy.log 2>&1)
 # FOC_REGISTRY_CONTRACT_ADDRESS=$(echo $POW_DEPLOY_OUTPUT | tail -n 1 | awk '{print $NF}')
 # echo "Contract address: $FOC_REGISTRY_CONTRACT_ADDRESS"
-

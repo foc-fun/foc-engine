@@ -22,6 +22,7 @@ type RegisteredClass struct {
 }
 
 type Registry struct {
+	// Map: RegistryAddress -> isRegistered
 	RegistryAddresses  map[string]bool
 	LastCompletedBlock uint
 	// Map: ContractAddress -> RegisteredContract

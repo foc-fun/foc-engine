@@ -59,7 +59,6 @@ func ProcessWebSocketMessage(message []byte, processStarknetEventData func([]byt
 		// TODO
 		fmt.Println("Received new head subscription message:", string(message))
 	case "starknet_subscriptionEvents":
-		fmt.Println("Received event subscription message:", string(message))
 		processStarknetEventData(message)
 	default:
 		fmt.Println("Unknown WebSocket message method:", response.Method)

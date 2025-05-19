@@ -125,9 +125,6 @@ func ProcessRegisterClassEvent(eventMessage StarknetEventData) {
 }
 
 func ProcessRegisteredContractEvent(eventMessage StarknetEventData) {
-	fmt.Println("Processing registered contract event:")
-	PrintStarknetEventData(eventMessage)
-
 	contractAddress := eventMessage.Params.Result.FromAddress
 	if len(contractAddress) != 66 {
 		// Remove 0x prefix if present
@@ -149,15 +146,12 @@ func ProcessRegisteredContractEvent(eventMessage StarknetEventData) {
 		return
 	}
 	eventData := eventMessage.Params.Result.Keys[1:]
-	fmt.Println("Event data -1:", eventData)
 	eventData = append(eventData, eventMessage.Params.Result.Data...)
-	fmt.Println("Event data -2:", eventData)
 	typeNameJson, _ := StarknetTypeDataMin(typeName, abi, eventData)
 	typeNameJson.(map[string]interface{})["contract_address"] = eventMessage.Params.Result.FromAddress
 	typeNameJson.(map[string]interface{})["block_number"] = eventMessage.Params.Result.BlockNumber
 	typeNameJson.(map[string]interface{})["transaction_hash"] = eventMessage.Params.Result.TransactionHash
 	typeNameJson.(map[string]interface{})["event_type"] = typeName
-	fmt.Println("Event data -3:", typeNameJson)
 
 	_, err = mongo.InsertJson("foc_engine", "events", typeNameJson)
 	if err != nil {
