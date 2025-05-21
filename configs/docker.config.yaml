@@ -17,4 +17,4 @@ Api:
   Admin: true
 Indexer:
   Host: indexer
-  Port: 8081
+  Port: 8085

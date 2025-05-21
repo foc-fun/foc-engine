@@ -7,7 +7,7 @@ PROJECT_ROOT=$SCRIPT_DIR/..
 ONCHAIN_SCRIPTS_DIR=$PROJECT_ROOT/onchain/scripts
 
 # Set default values
-FOC_ENGINE_URL="http://localhost:8081"
+FOC_ENGINE_URL="http://localhost:8085"
 
 display_help() {
   echo "Usage: $0 [option...]"

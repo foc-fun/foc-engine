@@ -15,6 +15,6 @@ COPY ./ .
 # Build the app & run it
 RUN go build -o indexer ./cmd/indexer/main.go
 
-EXPOSE 8081
+EXPOSE 8085
 
 CMD ["./indexer"]
