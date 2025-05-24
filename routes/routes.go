@@ -17,7 +17,8 @@ func InitBaseRoutes() {
 func InitRoutes() {
 	InitBaseRoutes()
 	InitRegistryRoutes()
-  InitEventsRoutes()
+	InitAccountsRoutes()
+	InitEventsRoutes()
 }
 
 func StartServer(host string, port int) {

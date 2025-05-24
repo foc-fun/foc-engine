@@ -60,9 +60,9 @@ func JsonToBson(data interface{}) (interface{}, error) {
 }
 
 func GetFocEngineEventsCollection() *mongo.Collection {
-  collection := Mongo.Client.Database("foc_engine").Collection("events")
-  if collection == nil {
-    fmt.Println("Collection not found: foc_engine events")
-  }
-  return collection
+	collection := Mongo.Client.Database("foc_engine").Collection("events")
+	if collection == nil {
+		fmt.Println("Collection not found: foc_engine events")
+	}
+	return collection
 }
