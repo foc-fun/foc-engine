@@ -20,6 +20,9 @@ RPC_URL=http://$RPC_HOST:$RPC_PORT
 ENGINE_HOST="indexer"
 ENGINE_PORT=8085
 ENGINE_URL=http://$ENGINE_HOST:$ENGINE_PORT
+ENGINE_API_HOST="api"
+ENGINE_API_PORT=8080
+ENGINE_API_URL=http://$ENGINE_API_HOST:$ENGINE_API_PORT
 
 OUTPUT_DIR=$HOME/.foc-tests
 TIMESTAMP=$(date +%s)
@@ -52,6 +55,7 @@ echo "Deployed contract address: $FOC_REGISTRY_CONTRACT_ADDRESS"
 echo "FOC_FUN_REGISTRY_CONTRACT=$FOC_REGISTRY_CONTRACT_ADDRESS" >> /configs/configs.env
 echo "curl -X POST $ENGINE_URL/registry/add-registry-contract -d {\"address\":\"$FOC_REGISTRY_CONTRACT_ADDRESS\"}"
 curl -X POST $ENGINE_URL/registry/add-registry-contract -d "{\"address\":\"$FOC_REGISTRY_CONTRACT_ADDRESS\"}"
+curl -X POST $ENGINE_API_URL/registry/add-registry-contract -d "{\"address\":\"$FOC_REGISTRY_CONTRACT_ADDRESS\"}"
 
 FOC_ACCOUNTS_CLASS_NAME="FocAccounts"
 echo "Deploying contract \"$FOC_ACCOUNTS_CLASS_NAME\" to devnet"
@@ -66,6 +70,7 @@ FOC_ACCOUNTS_CONTRACT_ADDRESS=$(echo $FOC_ACCOUNTS_DEPLOY_RESULT | jq -r '.contr
 echo "Deployed contract address: $FOC_ACCOUNTS_CONTRACT_ADDRESS"
 echo "curl -X POST $ENGINE_URL/accounts/add-accounts-contract -d {\"address\":\"$FOC_ACCOUNTS_CONTRACT_ADDRESS\",\"class_hash\":\"$FOC_ACCOUNTS_CLASS_HASH\"}"
 curl -X POST $ENGINE_URL/accounts/add-accounts-contract -d "{\"address\":\"$FOC_ACCOUNTS_CONTRACT_ADDRESS\",\"class_hash\":\"$FOC_ACCOUNTS_CLASS_HASH\"}"
+curl -X POST $ENGINE_API_URL/accounts/add-accounts-contract -d "{\"address\":\"$FOC_ACCOUNTS_CONTRACT_ADDRESS\",\"class_hash\":\"$FOC_ACCOUNTS_CLASS_HASH\"}"
 
 # TODO: Provide starkli option ?
 # echo "starkli declare --rpc $RPC_URL --account $DEVNET_ACCOUNT_FILE --private-key $DEVNET_ACCOUNT_PRIVATE_KEY --casm-file $POW_CONTRACT_CASM_FILE $POW_CONTRACT_SIERRA_FILE"

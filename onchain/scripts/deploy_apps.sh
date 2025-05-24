@@ -66,7 +66,12 @@ for entry in $(echo $APPS | jq -r '. | @base64'); do
   APP_NAME_UPPER_UNDERSCORE=$(echo $APP_NAME | tr '[:lower:]' '[:upper:]' | tr '-' '_' | tr ' ' '_')
   APP_CLASS_NAME=$(_jq '.class_name')
   APP_CONSTRUCTOR_ARGS_RAW=$(_jq '.constructor_args[]' | tr '\n' ' ')
-  APP_CONSTRUCTOR_ARGS=$(echo $APP_CONSTRUCTOR_ARGS_RAW | sed "s/\$ACCOUNT/$DEVNET_ACCOUNT_ADDRESS/g")
+  if [ -z "$APP_CONSTRUCTOR_ARGS_RAW" ]; then
+    APP_CONSTRUCTOR_ARGS=""
+  else
+    APP_CONSTRUCTOR_ARGS=$(echo $APP_CONSTRUCTOR_ARGS_RAW | sed "s/\$ACCOUNT/$DEVNET_ACCOUNT_ADDRESS/g")
+    APP_CONSTRUCTOR_ARGS=$(echo --constructor-calldata "$APP_CONSTRUCTOR_ARGS")
+  fi
   # TODO: Other replacements
 
   echo "Deploying contract \"$APP_CLASS_NAME\" to devnet"
@@ -76,8 +81,8 @@ for entry in $(echo $APPS | jq -r '. | @base64'); do
   echo "Declared contract class hash: $APP_CLASS_HASH"
 
   echo "Deploying contract \"$APP_CLASS_NAME\" to devnet"
-  echo "cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json deploy --contract-name $APP_CLASS_NAME --url $RPC_URL --class-hash $APP_CLASS_HASH --constructor-args $APP_CONSTRUCTOR_ARGS"
-  APP_DEPLOY_RESULT=$(cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json deploy --url $RPC_URL --class-hash $APP_CLASS_HASH --constructor-calldata "$APP_CONSTRUCTOR_ARGS" | tail -n 1)
+  echo "cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json deploy --contract-name $APP_CLASS_NAME --url $RPC_URL --class-hash $APP_CLASS_HASH $APP_CONSTRUCTOR_ARGS"
+  APP_DEPLOY_RESULT=$(cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json deploy --url $RPC_URL --class-hash $APP_CLASS_HASH $APP_CONSTRUCTOR_ARGS | tail -n 1)
   APP_CONTRACT_ADDRESS=$(echo $APP_DEPLOY_RESULT | jq -r '.contract_address')
   echo "Deployed contract address: $APP_CONTRACT_ADDRESS"
   # TODO: Change where this is stored

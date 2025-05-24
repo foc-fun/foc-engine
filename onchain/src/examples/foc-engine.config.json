@@ -10,6 +10,12 @@
         "init_command1.sh",
         "init_command2.sh"
       ]
+    },
+    {
+      "name": "Leaderboard Example",
+      "class_name": "LeaderboardContract",
+      "constructor_args": [],
+      "init_commands": []
     }
   ]
 }
