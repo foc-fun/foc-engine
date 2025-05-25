@@ -90,11 +90,38 @@ func ProcessRegistryEvent(eventMessage StarknetEventData) {
 }
 
 func ProcessRegisterContractEvent(eventMessage StarknetEventData) {
+  focEngineAddress := eventMessage.Params.Result.FromAddress
+  if len(focEngineAddress) != 66 {
+    // Remove 0x prefix if present
+    if focEngineAddress[:2] == "0x" {
+      focEngineAddress = focEngineAddress[2:]
+    }
+    // Pad with leading zeros to 64 characters
+    focEngineAddress = fmt.Sprintf("0x%064s", focEngineAddress)
+  }
 	address := eventMessage.Params.Result.Keys[1]
 	classHash := eventMessage.Params.Result.Data[0]
 	RegisterContract(address, classHash)
 
-	res, err := mongo.InsertJson("foc_engine", "registry", eventMessage.Params.Result)
+  if _, ok := FocRegistry.RegistryContracts[focEngineAddress]; !ok {
+    fmt.Println("Unknown foc engine address:", focEngineAddress)
+    return
+  }
+  registryContract := FocRegistry.RegistryContracts[focEngineAddress]
+  abi := registryContract.ContractClass.Abi
+  typeName, err := GetEventTypeName(eventMessage.Params.Result.Keys[0], abi)
+  if err != nil {
+    fmt.Println("Error getting event type name:", err)
+    return
+  }
+  eventData := eventMessage.Params.Result.Keys[1:]
+  eventData = append(eventData, eventMessage.Params.Result.Data...)
+  typeNameJson, _ := StarknetTypeDataMin(typeName, abi, eventData)
+  typeNameJson.(map[string]interface{})["registry_address"] = eventMessage.Params.Result.FromAddress
+  typeNameJson.(map[string]interface{})["block_number"] = eventMessage.Params.Result.BlockNumber
+  typeNameJson.(map[string]interface{})["transaction_hash"] = eventMessage.Params.Result.TransactionHash
+  typeNameJson.(map[string]interface{})["event_type"] = typeName
+	res, err := mongo.InsertJson("foc_engine", "registry", typeNameJson)
 	if err != nil {
 		fmt.Println("Error inserting event into MongoDB:", err)
 		return

@@ -63,6 +63,9 @@ for entry in $(echo $APPS | jq -r '. | @base64'); do
     echo ${entry} | base64 --decode | jq -r ${1}
   }
   APP_NAME=$(_jq '.name')
+  APP_NAME_HEX_UTF8=$(echo -n $APP_NAME | xxd -p -c 256)
+  APP_VERSION=$(_jq '.version')
+  APP_VERSION_HEX_UTF8=$(echo -n $APP_VERSION | xxd -p -c 256)
   APP_NAME_UPPER_UNDERSCORE=$(echo $APP_NAME | tr '[:lower:]' '[:upper:]' | tr '-' '_' | tr ' ' '_')
   APP_CLASS_NAME=$(_jq '.class_name')
   APP_CONSTRUCTOR_ARGS_RAW=$(_jq '.constructor_args[]' | tr '\n' ' ')
@@ -90,8 +93,8 @@ for entry in $(echo $APPS | jq -r '. | @base64'); do
 
   # TODO: Use other methods exposed by the registry?
   echo "Registering contract \"$APP_CLASS_NAME\" to foc registry"
-  echo "cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json invoke --url $RPC_URL --contract-address $FOC_REGISTRY_CONTRACT_ADDRESS --function register_contract --calldata $APP_CONTRACT_ADDRESS $APP_CLASS_HASH"
-  cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json invoke --url $RPC_URL --contract-address $FOC_REGISTRY_CONTRACT_ADDRESS --function register_contract --calldata $APP_CONTRACT_ADDRESS $APP_CLASS_HASH
+  echo "cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json invoke --url $RPC_URL --contract-address $FOC_REGISTRY_CONTRACT_ADDRESS --function register_contract --calldata $APP_CONTRACT_ADDRESS $APP_CLASS_HASH $APP_NAME_HEX_UTF8 $APP_VERSION_HEX_UTF8"
+  cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_ACCOUNT_FILE --account $DEVNET_ACCOUNT_NAME --wait --json invoke --url $RPC_URL --contract-address $FOC_REGISTRY_CONTRACT_ADDRESS --function register_contract --calldata $APP_CONTRACT_ADDRESS $APP_CLASS_HASH $APP_NAME_HEX_UTF8 $APP_VERSION_HEX_UTF8
 done
 
 # TODO: Provide starkli option ?

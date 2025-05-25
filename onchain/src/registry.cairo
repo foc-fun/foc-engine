@@ -117,6 +117,8 @@ pub mod FocRegistry {
     #[derive(Drop, Serde, starknet::Store, Clone)]
     pub struct ContractMetadata {
         class_hash: ClassHash,
+        name: felt252,
+        version: felt252,
     }
 
     #[derive(Drop, Serde, starknet::Store, Clone)]
@@ -217,7 +219,7 @@ pub mod FocRegistry {
                 panic!("Failed to deploy canvas contract");
             }
             let (addr, _response) = deploy_res.unwrap();
-            self.register_contract(addr, ContractMetadata { class_hash: class_hash });
+            self.register_contract(addr, ContractMetadata { class_hash: class_hash, name: 0, version: 0 });
             self.salt.write(salt + 1);
             addr
         }

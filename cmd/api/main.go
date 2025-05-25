@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/b-j-roberts/foc-engine/internal/config"
+	"github.com/b-j-roberts/foc-engine/internal/db/mongo"
 	"github.com/b-j-roberts/foc-engine/internal/provider"
 	"github.com/b-j-roberts/foc-engine/internal/registry"
 	"github.com/b-j-roberts/foc-engine/routes"
@@ -23,6 +24,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer provider.Close()
+
+	mongo.InitMongoDB()
 
 	routes.StartServer(config.Conf.Api.Host, config.Conf.Api.Port)
 

@@ -43,7 +43,6 @@ func AddAccountsContract(w http.ResponseWriter, r *http.Request) {
 		routeutils.WriteErrorJson(w, http.StatusUnauthorized, "Only the admin can add accounts contracts")
 		return
 	}
-
 	jsonBody, err := routeutils.ReadJsonBody[map[string]string](r)
 	if err != nil {
 		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid JSON body")
@@ -54,6 +53,16 @@ func AddAccountsContract(w http.ResponseWriter, r *http.Request) {
 		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing 'address' field in JSON body")
 		return
 	}
+
+  subscribeEvents, ok := (*jsonBody)["subscribeEvents"]
+  if !ok {
+    subscribeEvents = "false" // Default to false if not provided
+  }
+  if subscribeEvents != "true" && subscribeEvents != "false" {
+    routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid 'subscribeEvents' field in JSON body, must be 'true' or 'false'")
+    return
+  }
+
 	// Remove leading 0x & all 0s after 0x
 	if len(accountsContractAddress) > 2 && accountsContractAddress[:2] == "0x" {
 		accountsContractAddress = accountsContractAddress[2:]
@@ -62,18 +71,21 @@ func AddAccountsContract(w http.ResponseWriter, r *http.Request) {
 		accountsContractAddress = accountsContractAddress[1:]
 	}
 	accountsContractAddress = "0x" + accountsContractAddress
-	accountsClassHash, ok := (*jsonBody)["class_hash"]
-	if !ok {
-		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing 'class_hash' field in JSON body")
-		return
-	}
 
-	err = provider.SubscribeEvents(accountsContractAddress)
-	if err != nil {
-		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to subscribe to events")
-		return
-	}
-	registry.RegisterContract(accountsContractAddress, accountsClassHash)
+  if subscribeEvents == "true" {
+	  accountsClassHash, ok := (*jsonBody)["class_hash"]
+	  if !ok {
+	  	routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing 'class_hash' field in JSON body")
+	  	return
+	  }
+
+	  err = provider.SubscribeEvents(accountsContractAddress)
+	  if err != nil {
+	  	routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to subscribe to events")
+	  	return
+	  }
+	  registry.RegisterContract(accountsContractAddress, accountsClassHash)
+  }
 	accounts.AddAccountsContract(accountsContractAddress)
 
 	routeutils.WriteResultJson(w, "Accounts contract added successfully")

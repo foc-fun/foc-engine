@@ -54,7 +54,7 @@ echo "Deployed contract address: $FOC_REGISTRY_CONTRACT_ADDRESS"
 
 echo "FOC_FUN_REGISTRY_CONTRACT=$FOC_REGISTRY_CONTRACT_ADDRESS" >> /configs/configs.env
 echo "curl -X POST $ENGINE_URL/registry/add-registry-contract -d {\"address\":\"$FOC_REGISTRY_CONTRACT_ADDRESS\"}"
-curl -X POST $ENGINE_URL/registry/add-registry-contract -d "{\"address\":\"$FOC_REGISTRY_CONTRACT_ADDRESS\"}"
+curl -X POST $ENGINE_URL/registry/add-registry-contract -d "{\"address\":\"$FOC_REGISTRY_CONTRACT_ADDRESS\",\"subscribeEvents\":\"true\"}"
 curl -X POST $ENGINE_API_URL/registry/add-registry-contract -d "{\"address\":\"$FOC_REGISTRY_CONTRACT_ADDRESS\"}"
 
 FOC_ACCOUNTS_CLASS_NAME="FocAccounts"
@@ -69,7 +69,7 @@ FOC_ACCOUNTS_DEPLOY_RESULT=$(cd $CONTRACT_DIR && sncast --accounts-file $DEVNET_
 FOC_ACCOUNTS_CONTRACT_ADDRESS=$(echo $FOC_ACCOUNTS_DEPLOY_RESULT | jq -r '.contract_address')
 echo "Deployed contract address: $FOC_ACCOUNTS_CONTRACT_ADDRESS"
 echo "curl -X POST $ENGINE_URL/accounts/add-accounts-contract -d {\"address\":\"$FOC_ACCOUNTS_CONTRACT_ADDRESS\",\"class_hash\":\"$FOC_ACCOUNTS_CLASS_HASH\"}"
-curl -X POST $ENGINE_URL/accounts/add-accounts-contract -d "{\"address\":\"$FOC_ACCOUNTS_CONTRACT_ADDRESS\",\"class_hash\":\"$FOC_ACCOUNTS_CLASS_HASH\"}"
+curl -X POST $ENGINE_URL/accounts/add-accounts-contract -d "{\"address\":\"$FOC_ACCOUNTS_CONTRACT_ADDRESS\",\"class_hash\":\"$FOC_ACCOUNTS_CLASS_HASH\",\"subscribeEvents\":\"true\"}"
 curl -X POST $ENGINE_API_URL/accounts/add-accounts-contract -d "{\"address\":\"$FOC_ACCOUNTS_CONTRACT_ADDRESS\",\"class_hash\":\"$FOC_ACCOUNTS_CLASS_HASH\"}"
 
 # TODO: Provide starkli option ?
