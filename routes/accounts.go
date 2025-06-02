@@ -54,14 +54,14 @@ func AddAccountsContract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  subscribeEvents, ok := (*jsonBody)["subscribeEvents"]
-  if !ok {
-    subscribeEvents = "false" // Default to false if not provided
-  }
-  if subscribeEvents != "true" && subscribeEvents != "false" {
-    routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid 'subscribeEvents' field in JSON body, must be 'true' or 'false'")
-    return
-  }
+	subscribeEvents, ok := (*jsonBody)["subscribeEvents"]
+	if !ok {
+		subscribeEvents = "false" // Default to false if not provided
+	}
+	if subscribeEvents != "true" && subscribeEvents != "false" {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid 'subscribeEvents' field in JSON body, must be 'true' or 'false'")
+		return
+	}
 
 	// Remove leading 0x & all 0s after 0x
 	if len(accountsContractAddress) > 2 && accountsContractAddress[:2] == "0x" {
@@ -72,20 +72,20 @@ func AddAccountsContract(w http.ResponseWriter, r *http.Request) {
 	}
 	accountsContractAddress = "0x" + accountsContractAddress
 
-  if subscribeEvents == "true" {
-	  accountsClassHash, ok := (*jsonBody)["class_hash"]
-	  if !ok {
-	  	routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing 'class_hash' field in JSON body")
-	  	return
-	  }
+	if subscribeEvents == "true" {
+		accountsClassHash, ok := (*jsonBody)["class_hash"]
+		if !ok {
+			routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing 'class_hash' field in JSON body")
+			return
+		}
 
-	  err = provider.SubscribeEvents(accountsContractAddress)
-	  if err != nil {
-	  	routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to subscribe to events")
-	  	return
-	  }
-	  registry.RegisterContract(accountsContractAddress, accountsClassHash)
-  }
+		err = provider.SubscribeEvents(accountsContractAddress)
+		if err != nil {
+			routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to subscribe to events")
+			return
+		}
+		registry.RegisterContract(accountsContractAddress, accountsClassHash)
+	}
 	accounts.AddAccountsContract(accountsContractAddress)
 
 	routeutils.WriteResultJson(w, "Accounts contract added successfully")

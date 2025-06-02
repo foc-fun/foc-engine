@@ -17,6 +17,8 @@ func InitEventsRoutes() {
 	http.HandleFunc("/events/get-latest-with", GetLatestWith)
 	http.HandleFunc("/events/get-events-ordered", GetEventsOrdered)
 	http.HandleFunc("/events/get-unique-ordered", GetUniqueOrdered)
+	http.HandleFunc("/events/get-unique-with", GetUniqueWith)
+	http.HandleFunc("/events/count-events-with", CountEventsWith)
 }
 
 func GetBlockEvents(w http.ResponseWriter, r *http.Request) {
@@ -393,4 +395,175 @@ func GetUniqueOrdered(w http.ResponseWriter, r *http.Request) {
 	}
 	// Write the JSON response
 	routeutils.WriteDataJson(w, string(eventsJson))
+}
+
+func GetUniqueWith(w http.ResponseWriter, r *http.Request) {
+	contractAddress := r.URL.Query().Get("contractAddress")
+	if contractAddress == "" {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing contractAddress parameter")
+		return
+	}
+
+	eventType := r.URL.Query().Get("eventType")
+	if eventType == "" {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing eventType parameter")
+		return
+	}
+
+	// Pagination
+	defaultPage := 1
+	defaultLimit := 10
+	pageStr := r.URL.Query().Get("page")
+	if pageStr == "" {
+		pageStr = strconv.Itoa(defaultPage)
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid page parameter")
+		return
+	}
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr == "" {
+		limitStr = strconv.Itoa(defaultLimit)
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid limit parameter")
+		return
+	}
+	skip := (page - 1) * limit
+	if skip < 0 {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid page parameter")
+		return
+	}
+
+	uniqueKey := r.URL.Query().Get("uniqueKey")
+	if uniqueKey == "" {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing uniqueKey parameter")
+		return
+	}
+
+	userFilters := r.Body
+	if userFilters == nil {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing filters parameter")
+		return
+	}
+	defer userFilters.Close()
+	// Parse filters ( example: {"key":"value","key2":"value2"} )
+	var filters map[string]interface{}
+	if err := json.NewDecoder(userFilters).Decode(&filters); err != nil {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid filters parameter")
+		return
+	}
+	// Add contract address and event type to the filters
+	filters["contract_address"] = contractAddress
+	filters["event_type"] = eventType
+	filters[uniqueKey] = bson.M{"$exists": true}
+
+	pipeline := []bson.M{
+		{
+			"$match": filters,
+		},
+		{
+			"$group": bson.M{
+				"_id": "$" + uniqueKey,
+				"event": bson.M{
+					"$last": "$$ROOT",
+				},
+			},
+		},
+		{
+			"$sort": bson.M{
+				"_id": -1,
+			},
+		},
+		{
+			"$skip": skip,
+		},
+		{
+			"$limit": limit,
+		},
+		{
+			"$replaceRoot": bson.M{
+				"newRoot": "$event",
+			},
+		},
+	}
+	res, err := mongo.GetFocEngineEventsCollection().Aggregate(r.Context(), pipeline)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to query events")
+		return
+	}
+	defer res.Close(r.Context())
+	var events []map[string]interface{}
+	for res.Next(r.Context()) {
+		var event map[string]interface{}
+		if err := res.Decode(&event); err != nil {
+			routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to decode event")
+			return
+		}
+		events = append(events, event)
+	}
+	if err := res.Err(); err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to iterate over events")
+		return
+	}
+	if len(events) == 0 {
+		routeutils.WriteErrorJson(w, http.StatusNotFound, "No events found for the specified contract address and event type")
+		return
+	}
+	// Convert events to JSON
+	eventsJson, err := json.Marshal(events)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to marshal events to JSON")
+		return
+	}
+	// Write the JSON response
+	routeutils.WriteDataJson(w, string(eventsJson))
+}
+
+func CountEventsWith(w http.ResponseWriter, r *http.Request) {
+	contractAddress := r.URL.Query().Get("contractAddress")
+	if contractAddress == "" {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing contractAddress parameter")
+		return
+	}
+
+	eventType := r.URL.Query().Get("eventType")
+	if eventType == "" {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing eventType parameter")
+		return
+	}
+
+	userFilters := r.Body
+	if userFilters == nil {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing filters parameter")
+		return
+	}
+	defer userFilters.Close()
+
+	var filters map[string]interface{}
+	if err := json.NewDecoder(userFilters).Decode(&filters); err != nil {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid filters parameter")
+		return
+	}
+	filters["contract_address"] = contractAddress
+	filters["event_type"] = eventType
+
+	count, err := mongo.GetFocEngineEventsCollection().CountDocuments(r.Context(), filters)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to count events")
+		return
+	}
+
+	response := map[string]interface{}{
+		"count": count,
+	}
+	responseJson, err := json.Marshal(response)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to marshal response to JSON")
+		return
+	}
+
+	routeutils.WriteDataJson(w, string(responseJson))
 }

@@ -24,7 +24,7 @@ type RegisteredClass struct {
 type Registry struct {
 	// Map: RegistryAddress -> isRegistered
 	RegistryAddresses  map[string]bool
-  RegistryContracts map[string]RegisteredContract
+	RegistryContracts  map[string]RegisteredContract
 	LastCompletedBlock uint
 	// Map: ContractAddress -> RegisteredContract
 	RegisteredContracts map[string]RegisteredContract
@@ -40,7 +40,7 @@ func AddRegistryAddress(address string) {
 		FocRegistry.RegistryAddresses = make(map[string]bool)
 	}
 	contractAddress := address
-  fmt.Println("Adding registry address:", contractAddress)
+	fmt.Println("Adding registry address:", contractAddress)
 	if len(contractAddress) != 66 {
 		// Remove 0x prefix if present
 		if contractAddress[:2] == "0x" {
@@ -51,19 +51,19 @@ func AddRegistryAddress(address string) {
 	}
 	FocRegistry.RegistryAddresses[contractAddress] = true
 
-  contractClass, err := provider.GetStarknetClassAt(contractAddress)
-  if err != nil {
-    fmt.Println("Error getting contract class:", err)
-    return
-  }
-  if FocRegistry.RegistryContracts == nil {
-    FocRegistry.RegistryContracts = make(map[string]RegisteredContract)
-  }
-  FocRegistry.RegistryContracts[contractAddress] = RegisteredContract{
-    Address:       contractAddress,
-    ClassHash:     "0x0", // TODO
-    ContractClass: contractClass,
-  }
+	contractClass, err := provider.GetStarknetClassAt(contractAddress)
+	if err != nil {
+		fmt.Println("Error getting contract class:", err)
+		return
+	}
+	if FocRegistry.RegistryContracts == nil {
+		FocRegistry.RegistryContracts = make(map[string]RegisteredContract)
+	}
+	FocRegistry.RegistryContracts[contractAddress] = RegisteredContract{
+		Address:       contractAddress,
+		ClassHash:     "0x0", // TODO
+		ContractClass: contractClass,
+	}
 }
 
 func RegisterContract(address string, classHash string) {

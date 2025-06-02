@@ -242,10 +242,10 @@ var Types = TypesInfo{
 			Type: "core::starknet::contract_address::ContractAddress",
 			Name: "address",
 		},
-    {
-      Type: "core::starknet::class_hash::ClassHash",
-      Name: "class_hash",
-    },
+		{
+			Type: "core::starknet::class_hash::ClassHash",
+			Name: "class_hash",
+		},
 	},
 	Array: []TypeInfo{
 		{
@@ -386,7 +386,7 @@ var StarknetTypeParsers = map[string]func(string, string) interface{}{
 	"core::starknet::contract_address::ContractAddress": func(typeName string, data string) interface{} {
 		return data
 	},
-  "core::starknet::class_hash::ClassHash": func(typeName string, data string) interface{} {
-    return data
-  },
+	"core::starknet::class_hash::ClassHash": func(typeName string, data string) interface{} {
+		return data
+	},
 }
