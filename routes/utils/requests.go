@@ -1,6 +1,7 @@
 package routeutils
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -27,4 +28,23 @@ func ReadJsonBody[bodyType any](r *http.Request) (*bodyType, error) {
 	}
 
 	return &body, nil
+}
+
+func PostJson(url string, body interface{}, headers map[string]string) (*http.Response, error) {
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, io.NopCloser(bytes.NewBuffer(jsonBody)))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+	client := &http.Client{}
+	return client.Do(req)
 }

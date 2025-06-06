@@ -19,6 +19,7 @@ func InitRoutes() {
 	InitRegistryRoutes()
 	InitAccountsRoutes()
 	InitEventsRoutes()
+	InitPaymasterRoutes()
 }
 
 func StartServer(host string, port int) {
