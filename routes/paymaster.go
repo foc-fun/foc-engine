@@ -20,7 +20,7 @@ type Call struct {
 }
 
 type DeploymentData struct {
-	ClassHash string   `json:"classHash"`
+	ClassHash string   `json:"class_hash"`
 	Calldata  []string `json:"calldata"`
 	Salt      string   `json:"salt"`
 	Unique    string   `json:"unique"`
