@@ -11,7 +11,12 @@ import (
 
 func ConnectStarknetWebSocket(processStarknetEventData func([]byte)) (*websocket.Conn, error) {
 	// Connect to the WebSocket server
-	wsURL := "ws://" + config.Conf.Rpc.Host + "/ws"
+	var wsURL string
+	if config.Conf.Api.Production {
+		wsURL = "wss://" + config.Conf.Rpc.Host + "/ws"
+	} else {
+		wsURL = "ws://" + config.Conf.Rpc.Host + "/ws"
+	}
 	u, err := url.Parse(wsURL)
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -89,13 +94,17 @@ func SubscribeNewHeads() {
 
 func SubscribeEvents(address string) error {
 	// TODO: Block number argument
+	var startingBlockNumber int = 0
+	if config.Conf.Indexer.StartAt != nil {
+		startingBlockNumber = *config.Conf.Indexer.StartAt
+	}
 	call := StarknetRpcCall{
 		ID:      1,
 		Jsonrpc: "2.0",
 		Method:  "starknet_subscribeEvents",
 		Params: map[string]interface{}{
 			"block_id": map[string]interface{}{
-				"block_number": 0,
+				"block_number": startingBlockNumber,
 			},
 			"from_address": address,
 		},

@@ -14,11 +14,17 @@ type Provider struct {
 
 var StarknetProvider *Provider
 
-func InitProvider(processStarknetEventData func([]byte)) error {
-	conn, err := ConnectStarknetWebSocket(processStarknetEventData)
-	if err != nil {
-		fmt.Println("Error connecting to WebSocket:", err)
-		return err
+func InitProvider(processStarknetEventData func([]byte), connectWs bool) error {
+	var conn *websocket.Conn
+	var err error
+	if connectWs {
+		conn, err = ConnectStarknetWebSocket(processStarknetEventData)
+		if err != nil {
+			fmt.Println("Error connecting to WebSocket:", err)
+			return err
+		}
+	} else {
+		conn = nil
 	}
 	// Create a new Provider instance
 	StarknetProvider = &Provider{

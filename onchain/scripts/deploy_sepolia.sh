@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Deploy BROLY contracts to StarkNet Sepolia testnet
+# Deploy & setup sepolia contracts
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 PROJECT_ROOT=$SCRIPT_DIR/../..
@@ -68,6 +68,10 @@ done
 ONCHAIN_DIR=$PROJECT_ROOT/onchain
 FOC_REGISTRY_SIERRA_FILE=$ONCHAIN_DIR/target/dev/onchain_FocRegistry.contract_class.json
 
+VERSION="0.0.1"
+VERSION_UTF8_HEX=$(echo -n $VERSION | xxd -p -c 1000)
+CALLDATA=$(echo -n 0x$VERSION_UTF8_HEX)
+
 # Build the contract
 echo "Building the contract..."
 cd $ONCHAIN_DIR && scarb build
@@ -80,7 +84,21 @@ FOC_REGISTRY_CONTRACT_CLASSHASH=$(echo $FOC_REGISTRY_DECLARE_OUTPUT | tail -n 1 
 echo "Contract class hash: $FOC_REGISTRY_CONTRACT_CLASSHASH"
 
 # Deploying the contract
-CALLDATA=$(echo 42)
 echo "Deploying the contract..."
 echo "starkli deploy --network sepolia --keystore $STARKNET_KEYSTORE --account $STARKNET_ACCOUNT --watch $FOC_REGISTRY_CONTRACT_CLASSHASH $CALLDATA"
 starkli deploy --network sepolia --keystore $STARKNET_KEYSTORE --account $STARKNET_ACCOUNT --watch $FOC_REGISTRY_CONTRACT_CLASSHASH $CALLDATA
+
+FOC_ACCOUNTS_SIERRA_FILE=$ONCHAIN_DIR/target/dev/onchain_FocAccounts.contract_class.json
+
+# Declaring the accounts contract
+echo "Declaring the accounts contract..."
+
+echo "starkli declare --network sepolia --keystore $STARKNET_KEYSTORE --account $STARKNET_ACCOUNT --watch $FOC_ACCOUNTS_SIERRA_FILE"
+FOC_ACCOUNTS_DECLARE_OUTPUT=$(starkli declare --network sepolia --keystore $STARKNET_KEYSTORE --account $STARKNET_ACCOUNT --watch $FOC_ACCOUNTS_SIERRA_FILE 2>&1)
+FOC_ACCOUNTS_CONTRACT_CLASSHASH=$(echo $FOC_ACCOUNTS_DECLARE_OUTPUT | tail -n 1 | awk '{print $NF}')
+echo "Accounts contract class hash: $FOC_ACCOUNTS_CONTRACT_CLASSHASH"
+
+# Deploying the accounts contract
+echo "Deploying the accounts contract..."
+echo "starkli deploy --network sepolia --keystore $STARKNET_KEYSTORE --account $STARKNET_ACCOUNT --watch $FOC_ACCOUNTS_CONTRACT_CLASSHASH $CALLDATA"
+starkli deploy --network sepolia --keystore $STARKNET_KEYSTORE --account $STARKNET_ACCOUNT --watch $FOC_ACCOUNTS_CONTRACT_CLASSHASH $CALLDATA

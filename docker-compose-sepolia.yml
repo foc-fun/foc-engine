@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+  redis:
+    image: redis:7.2.4-alpine
+    restart: always
+    ports:
+      - 6379:6379
+    command: redis-server
+    volumes:
+      - redis:/data
+  mongo:
+    image: mongo:latest
+    restart: always
+    ports:
+      - 27017:27017
+    command: mongod
+    volumes:
+      - mongo:/data/db
+  api:
+    build:
+      dockerfile: dockerfiles/Dockerfile.sepolia.api
+      context: .
+    ports:
+      - 8080:8080
+    links:
+      - redis
+      - mongo
+    restart: always
+    environment:
+      - CONFIG_PATH=/configs/config.yaml
+      - MONGO_URI=mongodb://mongo:27017
+      - AVNU_PAYMASTER_API_KEY=${AVNU_PAYMASTER_API_KEY}
+    volumes:
+      - ./abis:/app/abis
+  indexer:
+    build:
+      dockerfile: dockerfiles/Dockerfile.sepolia.indexer
+      context: .
+    ports:
+      - 8085:8085
+    links:
+      - redis
+      - mongo
+    restart: always
+    environment:
+      - CONFIG_PATH=/configs/config.yaml
+      - MONGO_URI=mongodb://mongo:27017
+      - NO_PROXY=true
+    volumes:
+      - ./abis:/app/abis
+  setup:
+    build:
+      dockerfile: dockerfiles/Dockerfile.setup_sepolia
+      context: .
+    links:
+      - api
+      - indexer
+    depends_on:
+      api:
+        condition: service_started
+      indexer:
+        condition: service_started
+    restart: no
+    volumes:
+      - configs:/configs
+
+volumes:
+  redis:
+  mongo:
+  configs:

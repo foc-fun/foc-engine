@@ -18,7 +18,7 @@ func main() {
 
 	// Sleep for 10 seconds
 	time.Sleep(10 * time.Second)
-	err := provider.InitProvider(registry.ProcessStarknetEventData)
+	err := provider.InitProvider(registry.ProcessStarknetEventData, true)
 	if err != nil {
 		fmt.Println("Error initializing provider:", err)
 		os.Exit(1)

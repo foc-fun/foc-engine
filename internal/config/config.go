@@ -22,8 +22,9 @@ type ApiConfig struct {
 }
 
 type IndexerConfig struct {
-	Host string `yaml:"Host"`
-	Port int    `yaml:"Port"`
+	Host    string `yaml:"Host"`
+	Port    int    `yaml:"Port"`
+	StartAt *int   `yaml:"StartAt,omitempty"` // Optional field, can be nil
 }
 
 type Config struct {

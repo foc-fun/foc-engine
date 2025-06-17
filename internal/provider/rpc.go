@@ -177,30 +177,30 @@ func GetStarknetClassAt(address string) (*ContractClass, error) {
 }
 
 func Mint(address string, amount *big.Int, unit string) error {
-  // Create a new request body
-  requestBody := map[string]interface{}{
-    "address": address,
-    "amount":  amount,
-    "unit":    unit,
-  }
+	// Create a new request body
+	requestBody := map[string]interface{}{
+		"address": address,
+		"amount":  amount,
+		"unit":    unit,
+	}
 
-  // Marshal the request body to JSON
-  jsonData, err := json.Marshal(requestBody)
-  if err != nil {
-    return err
-  }
+	// Marshal the request body to JSON
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
 
-  // Send the request to the mint endpoint
-  url := "http://" + config.Conf.Rpc.Host + "/mint"
-  resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-  if err != nil {
-    return err
-  }
-  defer resp.Body.Close()
+	// Send the request to the mint endpoint
+	url := "http://" + config.Conf.Rpc.Host + "/mint"
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-  if resp.StatusCode != http.StatusOK {
-    return fmt.Errorf("failed to mint: %s", resp.Status)
-  }
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to mint: %s", resp.Status)
+	}
 
-  return nil
+	return nil
 }
