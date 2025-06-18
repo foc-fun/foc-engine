@@ -52,14 +52,14 @@ case "$subcommand" in
     echo "Running FOC engine..."
     # TODO: Command options: devnet/sepolia/mainnet, --help, --no-clean, --no-build,
     #       --project, config, engineurl?, ...
-    docker compose -f docker-compose-devnet.yml down --volumes
+    docker compose -f $PROJECT_ROOT/docker-compose-devnet.yml down --volumes
     # TODO: Use an image from Docker Hub or a local build
-    docker compose -f docker-compose-devnet.yml build
-    docker compose -f docker-compose-devnet.yml up
+    docker compose -f $PROJECT_ROOT/docker-compose-devnet.yml build
+    docker compose -f $PROJECT_ROOT/docker-compose-devnet.yml up
     ;;
   clean)
     echo "Cleaning up FOC engine..."
-    docker compose -f docker-compose-devnet.yml down --volumes
+    docker compose -f $PROJECT_ROOT/docker-compose-devnet.yml down --volumes
     ;;
   *)
     echo "Error: unknown subcommand '$subcommand'"
