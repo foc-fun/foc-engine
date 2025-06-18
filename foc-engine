@@ -1,3 +1,69 @@
 #!/bin/bash
+#
+# foc-engine cli tool
 
-echo "Hello!"
+PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ONCHAIN_SCRIPTS_DIR=$PROJECT_ROOT/onchain/scripts
+SCRIPTS_DIR=$PROJECT_ROOT/scripts
+
+display_help() {
+  echo "Usage: $0 [subcommand] [options...]"
+  echo
+  echo "Subcommands:"
+  echo "  help                Display this help message"
+  echo "  run                 Run the FOC engine"
+  echo "  clean               Clean up the FOC engine"
+  echo
+  echo "Examples: $0 run --help"
+}
+
+# Transform long options to short options
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--help") set -- "$@" "-h" ;;
+     --*) unrecognized_options+=("$arg") ;;
+     *) set -- "$@" "$arg"
+  esac
+done
+
+# Check if unknown options are passed, if so exit
+if [ ! -z "${unrecognized_options[@]}" ]; then
+  echo "Error: invalid option(s) passed ${unrecognized_options[*]}"
+  exit 1
+fi
+
+# Parse subcommand
+if [ $# -eq 0 ]; then
+  echo "Error: no subcommand provided"
+  display_help
+  exit 1
+fi
+
+subcommand="$1"
+shift
+
+# Handle subcommands
+case "$subcommand" in
+  help)
+    display_help
+    ;;
+  run)
+    echo "Running FOC engine..."
+    # TODO: Command options: devnet/sepolia/mainnet, --help, --no-clean, --no-build,
+    #       --project, config, engineurl?, ...
+    docker compose -f docker-compose-devnet.yml down --volumes
+    # TODO: Use an image from Docker Hub or a local build
+    docker compose -f docker-compose-devnet.yml build
+    docker compose -f docker-compose-devnet.yml up
+    ;;
+  clean)
+    echo "Cleaning up FOC engine..."
+    docker compose -f docker-compose-devnet.yml down --volumes
+    ;;
+  *)
+    echo "Error: unknown subcommand '$subcommand'"
+    display_help
+    exit 1
+    ;;
+esac
