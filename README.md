@@ -2,8 +2,8 @@
   <img height="250" src="resources/logo.png" alt="foc_engine_logo" align="center">
 </p>
 
-<h1 align="center" style="margin-top: 12px !important">FOC Engine</h1>
-<h3 align="center" style="margin-top: 4px !important">Let's make Starknet magic!</h3>
+<h2 align="center" style="margin-top: 12px !important">FOC Engine</h2>
+<h4 align="center" style="margin-top: 2px !important">Let's make Starknet magic!</h4>
 
 ## Dependencies
 
