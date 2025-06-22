@@ -18,3 +18,8 @@ Api:
 Indexer:
   Host: indexer
   Port: 8085
+Modules:
+  - AVNU_PAYMASTER
+  - ACCOUNTS
+  - EVENTS
+  - REGISTRY

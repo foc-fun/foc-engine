@@ -93,7 +93,6 @@ func SubscribeNewHeads() {
 }
 
 func SubscribeEvents(address string) error {
-	// TODO: Block number argument
 	var startingBlockNumber int = 0
 	if config.Conf.Indexer.StartAt != nil {
 		startingBlockNumber = *config.Conf.Indexer.StartAt

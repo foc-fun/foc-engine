@@ -1,7 +1,7 @@
 Rpc:
-  Host: starknet-devnet:5050
+  Host: localhost:5050
 Api:
-  Host: api
+  Host: localhost
   Port: 8080
   AllowOrigins:
     - '*'
@@ -16,10 +16,7 @@ Api:
   Production: false
   Admin: true
 Indexer:
-  Host: indexer
+  Host: localhost
   Port: 8085
 Modules:
   - AVNU_PAYMASTER
-  - ACCOUNTS
-  - EVENTS
-  - REGISTRY

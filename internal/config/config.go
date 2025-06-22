@@ -31,6 +31,7 @@ type Config struct {
 	Rpc     RpcConfig     `yaml:"Rpc"`
 	Api     ApiConfig     `yaml:"Api"`
 	Indexer IndexerConfig `yaml:"Indexer"`
+	Modules []string      `yaml:"Modules"`
 }
 
 var Conf *Config
@@ -53,4 +54,26 @@ func InitConfig() {
 		fmt.Println("Error parsing config file: ", err)
 		os.Exit(1)
 	}
+}
+
+// Modules enum
+type FocModule string
+
+const (
+	ModulePaymaster FocModule = "AVNU_PAYMASTER"
+	ModuleAccounts  FocModule = "ACCOUNTS"
+	ModuleEvents    FocModule = "EVENTS"
+	ModuleRegistry  FocModule = "REGISTRY"
+)
+
+func ModuleEnabled(module FocModule) bool {
+	if Conf == nil {
+		return false
+	}
+	for _, m := range Conf.Modules {
+		if m == string(module) {
+			return true
+		}
+	}
+	return false
 }

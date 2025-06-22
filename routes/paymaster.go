@@ -40,6 +40,7 @@ func BuildGaslessTx(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: Check api key is set
 	// TODO: Perform call checking and validation
 	// TODO: Move this to a separate package for better organization
 	baseUrl := "https://sepolia.api.avnu.fi" // https://starknet.api.avnu.fi

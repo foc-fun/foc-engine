@@ -25,7 +25,9 @@ func main() {
 	}
 	defer provider.Close()
 
-	mongo.InitMongoDB()
+	if mongo.ShouldConnectMongo() {
+		mongo.InitMongoDB()
+	}
 
 	routes.StartServer(config.Conf.Indexer.Host, config.Conf.Indexer.Port)
 

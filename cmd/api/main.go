@@ -8,24 +8,19 @@ import (
 
 	"github.com/b-j-roberts/foc-engine/internal/config"
 	"github.com/b-j-roberts/foc-engine/internal/db/mongo"
-	"github.com/b-j-roberts/foc-engine/internal/provider"
-	"github.com/b-j-roberts/foc-engine/internal/registry"
 	"github.com/b-j-roberts/foc-engine/routes"
 )
 
 func main() {
 	config.InitConfig()
 
+	// TODO: Remove this after testing
 	// Sleep for 10 seconds
 	time.Sleep(10 * time.Second)
-	err := provider.InitProvider(registry.ProcessStarknetEventData, false)
-	if err != nil {
-		fmt.Println("Error initializing provider:", err)
-		os.Exit(1)
-	}
-	defer provider.Close()
 
-	mongo.InitMongoDB()
+	if mongo.ShouldConnectMongo() {
+		mongo.InitMongoDB()
+	}
 
 	routes.StartServer(config.Conf.Api.Host, config.Conf.Api.Port)
 

@@ -1,0 +1,21 @@
+FROM golang:1.23.4-alpine
+
+RUN apk add --no-cache bash curl git jq yq
+
+# Copy over the configs
+WORKDIR /configs
+COPY ./configs/docker-paymaster.config.yaml /configs/config.yaml
+ENV CONFIG_PATH=/configs/config.yaml
+
+# Copy over the app
+WORKDIR /app
+COPY ./go.mod ./go.sum ./
+RUN go mod download
+COPY ./ .
+
+# Build the app & run it
+RUN go build -o api ./cmd/api/main.go
+
+EXPOSE 8080
+
+CMD ["./api"]

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/b-j-roberts/foc-engine/internal/config"
 	routeutils "github.com/b-j-roberts/foc-engine/routes/utils"
 )
 
@@ -16,10 +17,18 @@ func InitBaseRoutes() {
 
 func InitRoutes() {
 	InitBaseRoutes()
-	InitRegistryRoutes()
-	InitAccountsRoutes()
-	InitEventsRoutes()
-	InitPaymasterRoutes()
+	if config.ModuleEnabled(config.ModuleRegistry) {
+		InitRegistryRoutes()
+	}
+	if config.ModuleEnabled(config.ModuleAccounts) {
+		InitAccountsRoutes()
+	}
+	if config.ModuleEnabled(config.ModuleEvents) {
+		InitEventsRoutes()
+	}
+	if config.ModuleEnabled(config.ModulePaymaster) {
+		InitPaymasterRoutes()
+	}
 }
 
 func StartServer(host string, port int) {

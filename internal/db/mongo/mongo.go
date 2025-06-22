@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/b-j-roberts/foc-engine/internal/config"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -15,6 +16,15 @@ type MongoDB struct {
 }
 
 var Mongo *MongoDB
+
+func ShouldConnectMongo() bool {
+	if config.ModuleEnabled(config.ModuleAccounts) ||
+		config.ModuleEnabled(config.ModuleEvents) ||
+		config.ModuleEnabled(config.ModuleRegistry) {
+		return true
+	}
+	return false
+}
 
 func InitMongoDB() {
 	mongoUri := os.Getenv("MONGO_URI")

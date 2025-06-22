@@ -1,7 +1,7 @@
 Rpc:
   Host: starknet-sepolia.public.blastapi.io/rpc/v0_7
 Api:
-  Host: api
+  Host: 0.0.0.0
   Port: 8080
   AllowOrigins:
     - '*'
@@ -18,12 +18,8 @@ Api:
 Indexer:
   Host: indexer
   Port: 8085
-  StartAt: 86225
 Modules:
   - AVNU_PAYMASTER
-  - ACCOUNTS
-  - EVENTS
-  - REGISTRY
 Onchain:
   RegistryAddress: "0x03f828ccd66edd93a75467e3d6650f8c7fe8eb6b9e0698fd00f2730d10aa7037"
   AccountsAddress: "0x047bbc9250616deb0b526d16f7bd1c6fac0464e74c2bc8b4a58aac8ac225e6b5"
