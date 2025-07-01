@@ -33,7 +33,7 @@ func InitRoutes() {
 
 func StartServer(host string, port int) {
 	InitRoutes()
-	addr := fmt.Sprintf("%s:%d", host, port)
+	addr := fmt.Sprintf(":%d", port)
 	fmt.Printf("Starting server on %s\n", addr)
 	go func() {
 		if err := http.ListenAndServe(addr, nil); err != nil {
