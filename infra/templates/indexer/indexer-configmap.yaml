@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.labels.indexer.name }}-secret
+  labels:
+    app: {{ .Values.labels.indexer.name }}
+data:
+  MONGO_URI: mongodb://{{ .Values.labels.mongo.name }}:{{ .Values.ports.mongo }}
+  CONFIG_PATH: /configs/config.yaml
+  NO_PROXY: true

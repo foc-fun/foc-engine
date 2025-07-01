@@ -1,0 +1,45 @@
+labels:
+  redis:
+    name: redis
+  mongo:
+    name: mongo
+  api:
+    name: api
+  indexer:
+    name: indexer
+
+ports:
+  redis: 6379
+  mongo: 27017
+  api: 8080
+  indexer: 8085
+
+volumes:
+  redis:
+    name: redis-data
+    class: standard-rwo
+    storage: 10Gi
+  mongo:
+    name: mongo-data
+    class: standard-rwo
+    storage: 50Gi
+
+deployments:
+  sha: aabbccdd
+  redis:
+    replicas: 1
+    image: redis
+    tag: 7.2.4-alpine
+  mongo:
+    replicas: 1
+    image: mongo
+    tag: 8.0.11
+  api:
+    replicas: 1
+    image: brandonjroberts/foc-engine-api
+  indexer:
+    replicas: 1
+    image: brandonjroberts/foc-engine-indexer
+
+avnu:
+  apiKey: abc-def

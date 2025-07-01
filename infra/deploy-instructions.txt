@@ -1,0 +1,46 @@
+### Deploy the contract
+-----------------------
+setup .env w/ starkli account:
+STARKNET_KEYSTORE=$HOME/.starkli-sepolia/starkli-keystore.json
+STARKNET_ACCOUNT=$HOME/.starkli-sepolia/starkli-account.json
+
+./onchain/scripts/deploy_sepolia.sh
+
+### Setup the infra
+------------------------
+If needed:
+  Change all brandonjroberts instances in the following files to your docker hub username
+  - Makefile
+  - packages/infra/values.yaml
+
+Build the prod docker images and push to docker hub
+   Update appVersion in packages/infra/Chart.yaml
+   Update registryContractAddress & accountContractAddress in values.yaml
+   commit and merge changes
+   make docker-build
+   make docker-push
+
+Apply changes to the cloud backend
+   1. GCP Cloud console
+   2. Kubernetes engine
+   3. Connect to cluster
+   4. Connect to namespace ( example: Run `kubens foc-engine-sepolia`
+   5. Clone / pull latest changes in `foc-engine` repo
+   6. If full reset ( new contract )
+     - Run `make helm-uninstall`
+     - Run the following command with environment variables set:
+       ```
+       AVNU_API_KEY=abc-def make helm-install
+       ```
+     If not full reset ( only changed backend code )
+     - Run the following command with environment variables set:
+       ```
+       AVNU_API_KEY=abc-def make helm-upgrade
+       ```
+   7. Check everything is starting up with `kubectl get all`
+   8. Check if ingress was created with `kubectl get ingress`
+     - If no ingress, run
+       ```
+       AVNU_API_KEY=abc-def make helm-upgrade
+       ```
+   9. Ensure everything starts up ( all pods are running )

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.labels.mongo.name }}-volume-claim
+  labels:
+    app: {{ .Values.labels.mongo.name }}
+spec:
+  storageClassName: {{ .Values.volumes.mongo.class }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.volumes.mongo.storage }}
+

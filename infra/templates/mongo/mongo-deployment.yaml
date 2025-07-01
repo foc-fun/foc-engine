@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.labels.mongo.name }}
+spec:
+  replicas: {{ .Values.deployments.mongo.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.labels.mongo.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.labels.mongo.name }}
+    spec:
+      containers:
+        - name: {{ .Values.labels.mongo.name }}
+          image: {{ .Values.deployments.mongo.image }}:{{ .Values.deployments.mongo.tag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.ports.mongo }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.labels.mongo.name }}-secret
+          volumeMounts:
+            - mountPath: /data/db
+              name: {{ .Values.volumes.mongo.name }}
+      volumes:
+        - name: {{ .Values.volumes.mongo.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.labels.mongo.name }}-volume-claim
+

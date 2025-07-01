@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.labels.api.name }}-secret
+  labels:
+    app: {{ .Values.labels.api.name }}
+data:
+  MONGO_URI: mongodb://{{ .Values.labels.mongo.name }}:{{ .Values.ports.mongo }}
+  AVNU_PAYMASTER_API_KEY: {{ .Values.avnu.apiKey }}
+  CONFIG_PATH: /configs/config.yaml
+

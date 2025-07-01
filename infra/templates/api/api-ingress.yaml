@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: foc-engine-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: foc-engine-static-ip
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        api:
+          service:
+            name: {{ .Values.labels.api.name }}
+            port:
+              number: {{ .Values.ports.api }}
