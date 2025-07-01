@@ -19,6 +19,7 @@ func InitAccountsRoutes() {
 	http.HandleFunc("/accounts/get-accounts-contracts", GetAccountsContracts)
 
 	http.HandleFunc("/accounts/get-account", GetFocAccount)
+	http.HandleFunc("/accounts/get-accounts", GetFocAccounts)
 	http.HandleFunc("/accounts/mint-funds", MintFunds)
 }
 
@@ -162,6 +163,7 @@ func GetFocAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	account := accounts.AccountInfo{
 		Username: usernameStr,
+		Address:  accountAddress,
 	}
 
 	/*
@@ -175,6 +177,72 @@ func GetFocAccount(w http.ResponseWriter, r *http.Request) {
 		"contract_address": contractAddress,
 		"account_address":  accountAddress,
 		"account":          account,
+	}
+	resultJsonBytes, err := json.Marshal(resultJson)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to marshal JSON")
+		return
+	}
+	routeutils.WriteDataJson(w, string(resultJsonBytes))
+}
+
+func GetFocAccounts(w http.ResponseWriter, r *http.Request) {
+	// Read accounts as body: JSON.stringify({ addresses }),
+	jsonBody, err := routeutils.ReadJsonBody[map[string][]string](r)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	addresses, ok := (*jsonBody)["addresses"]
+	if !ok || len(addresses) == 0 {
+		routeutils.WriteErrorJson(w, http.StatusBadRequest, "Missing or invalid 'addresses' field in JSON body")
+		return
+	}
+	accountsInfo := make([]accounts.AccountInfo, 0, len(addresses))
+	// TODO: Do as single query
+	for _, address := range addresses {
+		findOptions := options.Find().SetSort(map[string]interface{}{
+			"_id": -1,
+		}).SetLimit(1)
+		res, err := mongo.GetFocEngineEventsCollection().Find(r.Context(), map[string]interface{}{
+			"contract_address": accounts.FocAccounts.AccountsContractAddress,
+			"user":             address,
+			"event_type":       "onchain::accounts::FocAccounts::UsernameClaimed",
+		}, findOptions)
+		if err != nil {
+			routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to query database")
+			return
+		}
+		defer res.Close(r.Context())
+
+		var accountEvent map[string]interface{}
+		if res.Next(r.Context()) {
+			if err := res.Decode(&accountEvent); err != nil {
+				routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to decode event")
+				return
+			}
+		} else {
+			continue // Skip if no event found for this address
+		}
+		if err := res.Err(); err != nil {
+			routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to iterate over results")
+			return
+		}
+		username, ok := accountEvent["username"].(string)
+		if !ok {
+			continue // Skip if username not found
+		}
+		usernameStr, err := readFeltString(username)
+		if err != nil {
+			continue // Skip if username decoding fails
+		}
+		accountsInfo = append(accountsInfo, accounts.AccountInfo{
+			Username: usernameStr,
+			Address:  address,
+		})
+	}
+	resultJson := map[string]interface{}{
+		"accounts": accountsInfo,
 	}
 	resultJsonBytes, err := json.Marshal(resultJson)
 	if err != nil {

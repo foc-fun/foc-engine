@@ -331,6 +331,11 @@ func GetUniqueOrdered(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orderKey := r.URL.Query().Get("orderKey")
+	if orderKey == "" {
+		orderKey = "_id" // Default to _id if not provided
+	}
+
 	pipeline := []bson.M{
 		{
 			"$match": bson.M{
@@ -348,7 +353,7 @@ func GetUniqueOrdered(w http.ResponseWriter, r *http.Request) {
 		},
 		{
 			"$sort": bson.M{
-				"_id": -1,
+				orderKey: -1, // Sort by the specified order key in descending order
 			},
 		},
 		{

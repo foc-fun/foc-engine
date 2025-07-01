@@ -4,6 +4,7 @@ import "fmt"
 
 type AccountInfo struct {
 	Username string `json:"username"`
+	Address  string `json:"address"`
 }
 
 type Accounts struct {
