@@ -1,0 +1,26 @@
+Rpc:
+  Host: starknet-sepolia.public.blastapi.io/rpc/v0_7
+Api:
+  Host: api
+  Port: 8080
+  AllowOrigins:
+    - '*'
+  AllowMethods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+  AllowHeaders:
+    - Content-Type
+  Production: true
+  Admin: true
+Indexer:
+  Host: indexer
+  Port: 8085
+  StartAt: 900000
+Modules:
+  - AVNU_PAYMASTER
+  - ACCOUNTS
+  - EVENTS
+  - REGISTRY
