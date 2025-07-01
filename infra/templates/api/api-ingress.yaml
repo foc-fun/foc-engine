@@ -11,7 +11,7 @@ spec:
       paths:
       - path: /
         pathType: Prefix
-        api:
+        backend:
           service:
             name: {{ .Values.labels.api.name }}
             port:

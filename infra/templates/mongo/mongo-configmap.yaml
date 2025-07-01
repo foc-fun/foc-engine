@@ -5,4 +5,4 @@ metadata:
   labels:
     app: {{ .Values.labels.mongo.name }}
 data:
-  TEST_VAR: 123
+  TEST_VAR: "123"

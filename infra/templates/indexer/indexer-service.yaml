@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.labels.indexer.name }}
+  labels:
+    app: {{ .Values.labels.indexer.name }}
+spec:
+  type: NodePort
+  ports:
+    - port: {{ .Values.ports.indexer }}
+  selector:
+    app: {{ .Values.labels.indexer.name }}

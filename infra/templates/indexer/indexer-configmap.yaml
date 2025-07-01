@@ -7,7 +7,7 @@ metadata:
 data:
   MONGO_URI: mongodb://{{ .Values.labels.mongo.name }}:{{ .Values.ports.mongo }}
   CONFIG_PATH: /configs/config.yaml
-  NO_PROXY: true
+  NO_PROXY: "true"
   REGISTRY_CONTRACT_ADDRESS: {{ .Values.onchain.registryContractAddress }}
   ACCOUNTS_CONTRACT_ADDRESS: {{ .Values.onchain.accountContractAddress }}
   ACCOUNTS_CLASS_HASH: {{ .Values.onchain.accountsClassHash }}

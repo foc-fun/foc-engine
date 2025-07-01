@@ -24,7 +24,7 @@ Apply changes to the cloud backend
    1. GCP Cloud console
    2. Kubernetes engine
    3. Connect to cluster
-   4. Connect to namespace ( example: Run `kubens foc-engine-sepolia`
+   4. Connect to namespace ( example: Run `kubens foc-engine-sepolia` )
    5. Clone / pull latest changes in `foc-engine` repo
    6. If full reset ( new contract )
      - Run `make helm-uninstall`
