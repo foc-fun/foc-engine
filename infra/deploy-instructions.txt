@@ -15,7 +15,7 @@ If needed:
 
 Build the prod docker images and push to docker hub
    Update appVersion in packages/infra/Chart.yaml
-   Update registryContractAddress & accountContractAddress in values.yaml
+   Update registryContractAddress, accountContractAddress, accountsClassHash in values.yaml
    commit and merge changes
    make docker-build
    make docker-push

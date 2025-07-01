@@ -8,4 +8,6 @@ data:
   MONGO_URI: mongodb://{{ .Values.labels.mongo.name }}:{{ .Values.ports.mongo }}
   AVNU_PAYMASTER_API_KEY: {{ .Values.avnu.apiKey }}
   CONFIG_PATH: /configs/config.yaml
-
+  REGISTRY_CONTRACT_ADDRESS: {{ .Values.onchain.registryContractAddress }}
+  ACCOUNTS_CONTRACT_ADDRESS: {{ .Values.onchain.accountContractAddress }}
+  ACCOUNTS_CLASS_HASH: {{ .Values.onchain.accountsClassHash }}
