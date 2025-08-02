@@ -6,12 +6,13 @@
 
 ## Overview
 
-FOC Engine is a Starknet-based application that provides API and indexer services for interacting with the Starknet blockchain. The project includes:
+FOC Engine is THE onchain app engine that provides APIs, indexer services, and easy to use components for building production ready onchain apps in days.
 
 - **API Service**: REST API server running on port 8080
 - **Indexer Service**: Starknet event indexer running on port 8085
 - **Smart Contracts**: Cairo contracts for on-chain functionality
 - **Infrastructure**: Docker Compose for local development, Helm charts for Kubernetes deployment
+- **Modules**: Modular onchain app components
 
 ## Dependencies
 
