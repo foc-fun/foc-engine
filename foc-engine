@@ -13,6 +13,7 @@ display_help() {
   echo "  help                Display this help message"
   echo "  run                 Run the FOC engine"
   echo "  clean               Clean up the FOC engine"
+  echo "  version             Show the version of the FOC engine"
   echo
   echo "Examples: $0 run --help"
 }
@@ -39,6 +40,9 @@ case "$subcommand" in
   clean)
     echo "Cleaning up FOC engine..."
     $SCRIPTS_DIR/clean_foc_engine.sh "$@"
+    ;;
+  version)
+    echo "FOC engine version v0.2.1"
     ;;
   *)
     echo "Error: unknown subcommand '$subcommand'"
