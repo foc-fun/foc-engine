@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: foc-engine-ingress
   annotations:
-    kubernetes.io/ingress.global-static-ip-name: foc-engine-static-ip
+    kubernetes.io/ingress.global-static-ip-name: {{ .Values.deployment.staticIp }}
     kubernetes.io/ingress.class: "gce"
 spec:
   rules:

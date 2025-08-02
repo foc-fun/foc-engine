@@ -25,6 +25,7 @@ volumes:
     storage: 50Gi
 
 deployments:
+  staticIp: foc-engine-static-ip
   sha: aabbccdd
   redis:
     replicas: 1
@@ -45,6 +46,6 @@ avnu:
   apiKey: abc-def
 
 onchain:
-  registryContractAddress: 0x03f828ccd66edd93a75467e3d6650f8c7fe8eb6b9e0698fd00f2730d10aa7037
-  accountContractAddress: 0x047bbc9250616deb0b526d16f7bd1c6fac0464e74c2bc8b4a58aac8ac225e6b5
-  accountsClassHash: 0x016d1be1e1296f3e1cf74685f3b9c389be5e679873377799df6bed8cf4a07682
+  registryContractAddress: 0x0389f07362f4565d8d8966202ca1f411cec66f4e63d6a728d53067b6f490ca06
+  accountContractAddress: 0x01e8650d6b97791c7f354d6741cda74bb8ff1ba82dee48589a45c9ef4e910fc9
+  accountsClassHash: 0x0577fa6444c4fad6a37897a7684db92cb9244e053440fdd71a076341ae7faa0a
