@@ -47,5 +47,5 @@ avnu:
 
 onchain:
   registryContractAddress: 0x0389f07362f4565d8d8966202ca1f411cec66f4e63d6a728d53067b6f490ca06
-  accountContractAddress: 0x01e8650d6b97791c7f354d6741cda74bb8ff1ba82dee48589a45c9ef4e910fc9
+  accountContractAddress: 0x07caa583a14ab8588b820f41d7bbe92bfc9b7f5c1f48de91a5ddead708dff814
   accountsClassHash: 0x0577fa6444c4fad6a37897a7684db92cb9244e053440fdd71a076341ae7faa0a
