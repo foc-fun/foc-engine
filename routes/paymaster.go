@@ -2,9 +2,11 @@ package routes
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"os"
 
+	"github.com/NethermindEth/starknet.go/typedData"
 	routeutils "github.com/b-j-roberts/foc-engine/routes/utils"
 )
 
@@ -70,7 +72,34 @@ func BuildGaslessTx(w http.ResponseWriter, r *http.Request) {
 	defer res.Body.Close()
 	txJsonBytes := buf.Bytes()
 
-	routeutils.WriteDataJson(w, string(txJsonBytes))
+	// Parse the typed data to get the message hash
+	var td typedData.TypedData
+	err = json.Unmarshal(txJsonBytes, &td)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to parse typed data")
+		return
+	}
+
+	// Get the message hash using the account address
+	messageHash, err := td.GetMessageHash(input.Account)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to calculate message hash")
+		return
+	}
+
+	// Return both the typed data and the message hash
+	response := map[string]interface{}{
+		"typedData":   json.RawMessage(txJsonBytes),
+		"messageHash": messageHash.String(),
+	}
+
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to marshal response")
+		return
+	}
+
+	routeutils.WriteDataJson(w, string(responseBytes))
 }
 
 type SendGaslessTxInput struct {
