@@ -37,6 +37,12 @@ func WriteErrorJson(w http.ResponseWriter, errCode int, err string) {
 	w.Write(BasicErrorJson(err))
 }
 
+func WriteErrorObjectJson(w http.ResponseWriter, errCode int, errObj any) {
+	SetupHeaders(w)
+	w.WriteHeader(errCode)
+	json.NewEncoder(w).Encode(errObj)
+}
+
 func BasicResultJson(result string) []byte {
 	return []byte(`{"result": "` + result + `"}`)
 }

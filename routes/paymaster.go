@@ -60,13 +60,17 @@ func BuildGaslessTx(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := routeutils.PostJson(avnuPaymasterUrl, requestBody, requestHeaders)
 	if err != nil {
-		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to build gasless transaction")
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to build AVNU gasless transaction")
+		return
+	}
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		routeutils.WriteErrorJson(w, res.StatusCode, "Error from AVNU paymaster API: "+res.Status)
 		return
 	}
 	var buf bytes.Buffer
 	_, err = buf.ReadFrom(res.Body)
 	if err != nil {
-		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to read response body")
+		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to read AVNU paymaster response body")
 		return
 	}
 	defer res.Body.Close()
@@ -76,7 +80,12 @@ func BuildGaslessTx(w http.ResponseWriter, r *http.Request) {
 	var td typedData.TypedData
 	err = json.Unmarshal(txJsonBytes, &td)
 	if err != nil {
-		routeutils.WriteErrorJson(w, http.StatusInternalServerError, "Failed to parse typed data")
+		txJsonBytesString := string(txJsonBytes)
+		errResponse := map[string]interface{}{
+			"error":      "Failed to parse paymaster response into typed data: " + err.Error(),
+			"buildTxRes": txJsonBytesString,
+		}
+		routeutils.WriteErrorObjectJson(w, http.StatusInternalServerError, errResponse)
 		return
 	}
 

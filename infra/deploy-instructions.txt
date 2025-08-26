@@ -11,10 +11,10 @@ STARKNET_ACCOUNT=$HOME/.starkli-sepolia/starkli-account.json
 If needed:
   Change all brandonjroberts instances in the following files to your docker hub username
   - Makefile
-  - packages/infra/values.yaml
+  - infra/values.yaml
 
 Build the prod docker images and push to docker hub
-   Update appVersion in packages/infra/Chart.yaml
+   Update appVersion in infra/Chart.yaml
    Update registryContractAddress, accountContractAddress, accountsClassHash in values.yaml
    commit and merge changes
    make docker-build
