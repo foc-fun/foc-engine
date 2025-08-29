@@ -41,9 +41,12 @@ func (idx *Indexer) connectWebSocket() (*websocket.Conn, error) {
 	// Parse the RPC URL and convert to WebSocket URL
 	rpcURL := idx.config.RPC
 	
-	// Replace https:// with wss:// or http:// with ws://
+	// Handle WebSocket URLs or convert HTTP URLs to WebSocket
 	var wsURL string
-	if strings.HasPrefix(rpcURL, "https://") {
+	if strings.HasPrefix(rpcURL, "wss://") || strings.HasPrefix(rpcURL, "ws://") {
+		// Already a WebSocket URL
+		wsURL = rpcURL
+	} else if strings.HasPrefix(rpcURL, "https://") {
 		wsURL = strings.Replace(rpcURL, "https://", "wss://", 1)
 	} else if strings.HasPrefix(rpcURL, "http://") {
 		wsURL = strings.Replace(rpcURL, "http://", "ws://", 1)
@@ -72,21 +75,22 @@ func (idx *Indexer) subscribeToEvents(conn *websocket.Conn) error {
 	// Normalize contract address
 	contractAddress := idx.normalizeAddress(idx.config.Contract)
 	
-	// Prepare subscription request
+	// Prepare subscription request (matching existing provider implementation)
 	subscribeCall := StarknetRpcCall{
 		ID:      1,
 		Jsonrpc: "2.0",
 		Method:  "starknet_subscribeEvents",
 		Params: map[string]interface{}{
-			"from_block": map[string]interface{}{
-				"block_number": idx.config.StartBlock,
+			"block_id": map[string]interface{}{
+				"block_number": int(idx.config.StartBlock),
 			},
 			"from_address": contractAddress,
-			"keys": [][]string{
-				{idx.eventSelector}, // First key is the event selector
-			},
 		},
 	}
+	
+	// Debug: Print subscription request
+	subscribeJSON, _ := json.MarshalIndent(subscribeCall, "", "  ")
+	fmt.Printf("DEBUG: Sending subscription request:\n%s\n", string(subscribeJSON))
 	
 	// Send subscription request
 	if err := conn.WriteJSON(subscribeCall); err != nil {
@@ -137,12 +141,17 @@ func (idx *Indexer) handleWebSocketMessages(conn *websocket.Conn) {
 
 // processWebSocketMessage processes a single WebSocket message
 func (idx *Indexer) processWebSocketMessage(message []byte) {
+	// Debug: Print raw message
+	fmt.Printf("DEBUG: Received WebSocket message: %s\n", string(message))
+	
 	// First, try to parse as a generic response to check the method
 	var response WebSocketResponse
 	if err := json.Unmarshal(message, &response); err != nil {
 		fmt.Printf("Error unmarshalling WebSocket message: %v\n", err)
 		return
 	}
+	
+	fmt.Printf("DEBUG: Parsed response - Method: %s, ID: %d\n", response.Method, response.ID)
 	
 	// Check if this is a subscription confirmation
 	if response.Method == "" && response.Result != nil {
@@ -152,6 +161,7 @@ func (idx *Indexer) processWebSocketMessage(message []byte) {
 	
 	// Check if this is an event notification
 	if response.Method == "starknet_subscriptionEvents" {
+		fmt.Printf("DEBUG: Processing event notification\n")
 		// Parse as event data
 		var eventData WebSocketEventData
 		if err := json.Unmarshal(message, &eventData); err != nil {
@@ -160,11 +170,27 @@ func (idx *Indexer) processWebSocketMessage(message []byte) {
 		}
 		
 		idx.processEvent(eventData)
+	} else {
+		fmt.Printf("DEBUG: Unknown message method: %s\n", response.Method)
 	}
 }
 
 // processEvent processes a single event received via WebSocket
 func (idx *Indexer) processEvent(wsEvent WebSocketEventData) {
+	// Filter by event selector since we're not filtering at subscription level
+	if len(wsEvent.Params.Result.Keys) > 0 {
+		// Normalize both selectors for comparison (ensure consistent padding)
+		receivedSelector := idx.normalizeEventSelector(wsEvent.Params.Result.Keys[0])
+		expectedSelector := idx.normalizeEventSelector(idx.eventSelector)
+		
+		if receivedSelector != expectedSelector {
+			fmt.Printf("DEBUG: Filtering out event with selector %s (expected %s)\n", receivedSelector, expectedSelector)
+			return
+		}
+	}
+	
+	fmt.Printf("DEBUG: Processing matching event with selector %s\n", wsEvent.Params.Result.Keys[0])
+	
 	// Extract order key based on the configured index
 	allValues := append(wsEvent.Params.Result.Keys, wsEvent.Params.Result.Data...)
 	var orderKey string
@@ -195,6 +221,20 @@ func (idx *Indexer) processEvent(wsEvent WebSocketEventData) {
 	
 	fmt.Printf("Indexed event at block %d (tx: %s)\n", event.BlockNumber, event.TransactionHash[:10]+"...")
 	fmt.Printf("  Total events stored: %d\n", idx.GetEventCount())
+}
+
+// normalizeEventSelector normalizes an event selector to 64-char hex format
+func (idx *Indexer) normalizeEventSelector(selector string) string {
+	// Remove 0x prefix if present
+	if strings.HasPrefix(selector, "0x") {
+		selector = selector[2:]
+	}
+	
+	// Pad with leading zeros to 64 characters
+	selector = fmt.Sprintf("%064s", selector)
+	
+	// Add 0x prefix
+	return "0x" + selector
 }
 
 // tryWebSocket attempts to start WebSocket-based indexing

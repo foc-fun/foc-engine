@@ -160,7 +160,15 @@ func (idx *Indexer) makeRPCCall(call StarknetRpcCall) (*StarknetRpcResponse, err
 		return nil, fmt.Errorf("failed to marshal RPC call: %v", err)
 	}
 	
-	resp, err := http.Post(idx.config.RPC, "application/json", bytes.NewBuffer(callBytes))
+	// Convert WebSocket URLs to HTTP for RPC calls
+	rpcURL := idx.config.RPC
+	if strings.HasPrefix(rpcURL, "wss://") {
+		rpcURL = strings.Replace(rpcURL, "wss://", "https://", 1)
+	} else if strings.HasPrefix(rpcURL, "ws://") {
+		rpcURL = strings.Replace(rpcURL, "ws://", "http://", 1)
+	}
+	
+	resp, err := http.Post(rpcURL, "application/json", bytes.NewBuffer(callBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to make RPC call: %v", err)
 	}
