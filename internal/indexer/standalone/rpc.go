@@ -1,0 +1,226 @@
+package standalone
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/NethermindEth/starknet.go/utils"
+)
+
+// StarknetRpcCall represents a JSON-RPC call to Starknet
+type StarknetRpcCall struct {
+	ID      int         `json:"id"`
+	Jsonrpc string      `json:"jsonrpc"`
+	Method  string      `json:"method"`
+	Params  interface{} `json:"params"`
+}
+
+// StarknetRpcResponse represents a JSON-RPC response from Starknet
+type StarknetRpcResponse struct {
+	Jsonrpc string      `json:"jsonrpc"`
+	ID      int         `json:"id"`
+	Result  interface{} `json:"result"`
+	Error   interface{} `json:"error"`
+}
+
+// EventFilter represents the filter for querying events
+type EventFilter struct {
+	FromBlock   *BlockID     `json:"from_block,omitempty"`
+	ToBlock     *BlockID     `json:"to_block,omitempty"`
+	Address     string       `json:"address,omitempty"`
+	Keys        [][]string   `json:"keys,omitempty"`
+}
+
+// BlockID represents a block identifier
+type BlockID struct {
+	BlockNumber *uint64 `json:"block_number,omitempty"`
+	BlockHash   *string `json:"block_hash,omitempty"`
+}
+
+// Event represents a Starknet event
+type Event struct {
+	BlockHash       string   `json:"block_hash"`
+	BlockNumber     uint64   `json:"block_number"`
+	FromAddress     string   `json:"from_address"`
+	TransactionHash string   `json:"transaction_hash"`
+	Keys            []string `json:"keys"`
+	Data            []string `json:"data"`
+}
+
+// EventsResult represents the result of get_events call
+type EventsResult struct {
+	Events []Event `json:"events"`
+}
+
+// getLatestBlockNumber gets the latest block number from the RPC
+func (idx *Indexer) getLatestBlockNumber() (uint64, error) {
+	call := StarknetRpcCall{
+		ID:      1,
+		Jsonrpc: "2.0",
+		Method:  "starknet_blockNumber",
+		Params:  []interface{}{},
+	}
+	
+	response, err := idx.makeRPCCall(call)
+	if err != nil {
+		return 0, err
+	}
+	
+	// Parse the block number from response
+	// The result can be either a float64 or an int
+	var blockNum uint64
+	switch v := response.Result.(type) {
+	case float64:
+		blockNum = uint64(v)
+	case int:
+		blockNum = uint64(v)
+	case int64:
+		blockNum = uint64(v)
+	default:
+		return 0, fmt.Errorf("unexpected response type for block number: %T", response.Result)
+	}
+	
+	return blockNum, nil
+}
+
+// getEventsAtBlock retrieves events at a specific block
+func (idx *Indexer) getEventsAtBlock(blockNumber uint64) ([]EventData, error) {
+	// Normalize contract address
+	contractAddress := idx.normalizeAddress(idx.config.Contract)
+	
+	// Use cached event selector
+	eventSelector := idx.eventSelector
+	
+	// Create event filter - if event selector is provided, use it as a filter
+	filter := EventFilter{
+		FromBlock: &BlockID{BlockNumber: &blockNumber},
+		ToBlock:   &BlockID{BlockNumber: &blockNumber},
+		Address:   contractAddress,
+	}
+	
+	// Only add keys filter if we have a valid event selector (hex format)
+	if strings.HasPrefix(eventSelector, "0x") {
+		filter.Keys = [][]string{{eventSelector}}
+	}
+	
+	call := StarknetRpcCall{
+		ID:      1,
+		Jsonrpc: "2.0",
+		Method:  "starknet_getEvents",
+		Params: map[string]interface{}{
+			"filter": filter,
+		},
+	}
+	
+	response, err := idx.makeRPCCall(call)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Parse events from response
+	eventsJson, err := json.Marshal(response.Result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal events result: %v", err)
+	}
+	
+	var eventsResult EventsResult
+	if err := json.Unmarshal(eventsJson, &eventsResult); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal events result: %v", err)
+	}
+	
+	// Convert to EventData
+	var events []EventData
+	for _, event := range eventsResult.Events {
+		orderKey := idx.extractOrderKey(event)
+		
+		eventData := EventData{
+			BlockNumber:     event.BlockNumber,
+			TransactionHash: event.TransactionHash,
+			FromAddress:     event.FromAddress,
+			Keys:            event.Keys,
+			Data:            event.Data,
+			Timestamp:       time.Now().Unix(),
+			OrderKey:        orderKey,
+		}
+		events = append(events, eventData)
+	}
+	
+	return events, nil
+}
+
+// makeRPCCall makes a JSON-RPC call to the Starknet node
+func (idx *Indexer) makeRPCCall(call StarknetRpcCall) (*StarknetRpcResponse, error) {
+	callBytes, err := json.Marshal(call)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal RPC call: %v", err)
+	}
+	
+	resp, err := http.Post(idx.config.RPC, "application/json", bytes.NewBuffer(callBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to make RPC call: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+	
+	var response StarknetRpcResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+	
+	if response.Error != nil {
+		return nil, fmt.Errorf("RPC error: %v", response.Error)
+	}
+	
+	return &response, nil
+}
+
+// normalizeAddress normalizes a Starknet address to 0x-prefixed 64-char hex
+func (idx *Indexer) normalizeAddress(address string) string {
+	// Remove 0x prefix if present
+	if strings.HasPrefix(address, "0x") {
+		address = address[2:]
+	}
+	
+	// Pad with leading zeros to 64 characters
+	address = fmt.Sprintf("%064s", address)
+	
+	// Add 0x prefix
+	return "0x" + address
+}
+
+// getEventSelector calculates the event selector from event name
+func (idx *Indexer) getEventSelector(eventName string) string {
+	// If it's already a hex selector, use it as-is
+	if strings.HasPrefix(eventName, "0x") {
+		return eventName
+	}
+	
+	// Use starknet.go's GetSelectorFromName to compute the selector
+	selector := utils.GetSelectorFromName(eventName)
+	selectorHex := fmt.Sprintf("0x%064x", selector)
+	
+	return selectorHex
+}
+
+// extractOrderKey extracts the key value to order by from the event
+func (idx *Indexer) extractOrderKey(event Event) string {
+	// The order-by index refers to the position in the combined keys+data array
+	// Keys come first, then data
+	allValues := append(event.Keys, event.Data...)
+	
+	if idx.config.OrderBy < 0 || idx.config.OrderBy >= len(allValues) {
+		// Invalid index, use block number as fallback
+		return fmt.Sprintf("%020d", event.BlockNumber)
+	}
+	
+	return allValues[idx.config.OrderBy]
+}
