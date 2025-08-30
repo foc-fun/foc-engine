@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // Config holds the configuration for the standalone indexer
@@ -255,6 +256,25 @@ func (idx *Indexer) startHTTPServer() {
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		fmt.Printf("HTTP server error: %v\n", err)
 	}
+}
+
+// padHex pads a hex string to 32 bytes (66 characters including 0x prefix)
+func padHex(hex string) string {
+	if hex == "" {
+		return "0x0000000000000000000000000000000000000000000000000000000000000000"
+	}
+	
+	// Remove 0x prefix if present
+	if strings.HasPrefix(hex, "0x") {
+		hex = hex[2:]
+	}
+	
+	// Pad to 64 characters (32 bytes)
+	if len(hex) < 64 {
+		hex = strings.Repeat("0", 64-len(hex)) + hex
+	}
+	
+	return "0x" + hex
 }
 
 // computeEventSelector computes the event selector from event name

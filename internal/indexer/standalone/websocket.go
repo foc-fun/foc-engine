@@ -199,7 +199,7 @@ func (idx *Indexer) processEvent(wsEvent WebSocketEventData) {
 	// Extract order key
 	var orderKey string
 	if idx.config.OrderBy >= 0 && idx.config.OrderBy < len(allValues) {
-		orderKey = allValues[idx.config.OrderBy]
+		orderKey = padHex(allValues[idx.config.OrderBy])
 	} else {
 		orderKey = fmt.Sprintf("%020d", wsEvent.Params.Result.BlockNumber)
 	}
@@ -207,7 +207,7 @@ func (idx *Indexer) processEvent(wsEvent WebSocketEventData) {
 	// Extract unique key if unique constraint is enabled
 	var uniqueKey string
 	if idx.config.Unique >= 0 && idx.config.Unique < len(allValues) {
-		uniqueKey = allValues[idx.config.Unique]
+		uniqueKey = padHex(allValues[idx.config.Unique])
 	}
 	
 	// Create EventData

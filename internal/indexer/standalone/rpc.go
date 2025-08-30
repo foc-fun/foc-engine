@@ -232,7 +232,7 @@ func (idx *Indexer) extractOrderKey(event Event) string {
 		return fmt.Sprintf("%020d", event.BlockNumber)
 	}
 	
-	return allValues[idx.config.OrderBy]
+	return padHex(allValues[idx.config.OrderBy])
 }
 
 // extractUniqueKey extracts the unique key value from the event
@@ -246,5 +246,5 @@ func (idx *Indexer) extractUniqueKey(event Event) string {
 		return ""
 	}
 	
-	return allValues[idx.config.Unique]
+	return padHex(allValues[idx.config.Unique])
 }
