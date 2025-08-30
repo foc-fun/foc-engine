@@ -277,6 +277,15 @@ func padHex(hex string) string {
 	return "0x" + hex
 }
 
+// padHexArray pads all hex strings in an array to 32 bytes
+func padHexArray(hexArray []string) []string {
+	paddedArray := make([]string, len(hexArray))
+	for i, hex := range hexArray {
+		paddedArray[i] = padHex(hex)
+	}
+	return paddedArray
+}
+
 // computeEventSelector computes the event selector from event name
 func (idx *Indexer) computeEventSelector(eventName string) string {
 	// Delegate to the RPC module which has the logic
