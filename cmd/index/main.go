@@ -50,7 +50,7 @@ func main() {
 	fmt.Println()
 	
 	// Create and start the indexer
-	indexer := standalone.New(standalone.Config{
+	indexer, err := standalone.New(standalone.Config{
 		Contract:   *contract,
 		Event:      *event,
 		OrderBy:    *orderBy,
@@ -59,6 +59,10 @@ func main() {
 		RPC:        *rpc,
 		Network:    *network,
 	})
+	if err != nil {
+		fmt.Printf("Error creating indexer: %v\n", err)
+		os.Exit(1)
+	}
 	
 	// Start indexing in a goroutine
 	go func() {
@@ -75,8 +79,8 @@ func main() {
 	<-sigChan
 	fmt.Println("\nShutting down indexer...")
 	
-	if err := indexer.Stop(); err != nil {
-		fmt.Printf("Error stopping indexer: %v\n", err)
+	if err := indexer.Close(); err != nil {
+		fmt.Printf("Error closing indexer: %v\n", err)
 		os.Exit(1)
 	}
 	

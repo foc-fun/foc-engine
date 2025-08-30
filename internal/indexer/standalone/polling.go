@@ -42,7 +42,10 @@ func (idx *Indexer) startPollingLoop() error {
 					}
 					
 					if len(events) > 0 {
-						idx.storeEvents(events)
+						if err := idx.storeEvents(events); err != nil {
+							fmt.Printf("Error storing events: %v\n", err)
+							continue
+						}
 						fmt.Printf("Indexed %d events at block %d\n", len(events), blockNum)
 						fmt.Printf("  Total events stored: %d\n", idx.GetEventCount())
 					}

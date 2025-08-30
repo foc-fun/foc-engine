@@ -223,7 +223,10 @@ func (idx *Indexer) processEvent(wsEvent WebSocketEventData) {
 	}
 	
 	// Store the event
-	idx.storeEvents([]EventData{event})
+	if err := idx.storeEvents([]EventData{event}); err != nil {
+		fmt.Printf("Error storing event: %v\n", err)
+		return
+	}
 	
 	// Update current block
 	if wsEvent.Params.Result.BlockNumber > idx.currentBlock {

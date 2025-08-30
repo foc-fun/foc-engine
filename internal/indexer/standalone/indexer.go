@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
-	"sync"
 )
 
 // Config holds the configuration for the standalone indexer
@@ -36,10 +34,8 @@ type EventData struct {
 type Indexer struct {
 	config Config
 	
-	// In-memory storage
-	events       []EventData                // All events (for backward compatibility)
-	uniqueEvents map[string]EventData       // Latest events by unique key
-	eventsMux    sync.RWMutex
+	// Storage backend
+	storage *Storage
 	
 	// State
 	currentBlock  uint64
@@ -49,14 +45,19 @@ type Indexer struct {
 }
 
 // New creates a new standalone indexer
-func New(config Config) *Indexer {
+func New(config Config) (*Indexer, error) {
+	// Initialize storage
+	storage, err := NewStorage("./indexer_db")
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize storage: %v", err)
+	}
+	
 	return &Indexer{
 		config:       config,
-		events:       make([]EventData, 0),
-		uniqueEvents: make(map[string]EventData),
+		storage:      storage,
 		currentBlock: config.StartBlock,
 		stopChan:     make(chan struct{}),
-	}
+	}, nil
 }
 
 // Start begins the indexing process, attempting WebSocket first with polling fallback
@@ -92,76 +93,49 @@ func (idx *Indexer) Stop() error {
 	return nil
 }
 
-// storeEvents stores events in memory, maintaining order by the specified key
-func (idx *Indexer) storeEvents(events []EventData) {
-	idx.eventsMux.Lock()
-	defer idx.eventsMux.Unlock()
-	
-	for _, event := range events {
-		// Store in all events list (for backward compatibility)
-		idx.events = append(idx.events, event)
-		
-		// Store in unique events map if unique constraint is enabled
-		if idx.config.Unique >= 0 && event.UniqueKey != "" {
-			idx.uniqueEvents[event.UniqueKey] = event
-		}
+// Close closes the indexer and storage
+func (idx *Indexer) Close() error {
+	if err := idx.Stop(); err != nil {
+		return err
 	}
-	
-	// Sort all events by the order key
-	sort.Slice(idx.events, func(i, j int) bool {
-		return idx.events[i].OrderKey < idx.events[j].OrderKey
-	})
+	return idx.storage.Close()
 }
 
-// GetEvents returns all indexed events
-func (idx *Indexer) GetEvents() []EventData {
-	idx.eventsMux.RLock()
-	defer idx.eventsMux.RUnlock()
-	
-	// Return a copy to prevent external modification
-	eventsCopy := make([]EventData, len(idx.events))
-	copy(eventsCopy, idx.events)
-	return eventsCopy
+// storeEvents stores events in BadgerDB
+func (idx *Indexer) storeEvents(events []EventData) error {
+	for _, event := range events {
+		if err := idx.storage.StoreEvent(event); err != nil {
+			return fmt.Errorf("failed to store event: %v", err)
+		}
+	}
+	return nil
+}
+
+// GetEvents returns indexed events with pagination
+func (idx *Indexer) GetEvents(page int, pageLength int, order string) ([]EventData, int, error) {
+	return idx.storage.GetEvents(page, pageLength, order)
 }
 
 // GetEventCount returns the number of indexed events
 func (idx *Indexer) GetEventCount() int {
-	idx.eventsMux.RLock()
-	defer idx.eventsMux.RUnlock()
-	return len(idx.events)
+	count, _ := idx.storage.GetEventCount()
+	return count
 }
 
 // GetLatestOrderedEvents returns the latest events ordered by the order key with unique constraint
-func (idx *Indexer) GetLatestOrderedEvents() []EventData {
-	idx.eventsMux.RLock()
-	defer idx.eventsMux.RUnlock()
-	
+func (idx *Indexer) GetLatestOrderedEvents(page int, pageLength int, order string) ([]EventData, int, error) {
 	if idx.config.Unique < 0 {
-		// No unique constraint, return all events ordered
-		eventsCopy := make([]EventData, len(idx.events))
-		copy(eventsCopy, idx.events)
-		return eventsCopy
+		// No unique constraint, return all events
+		return idx.storage.GetEvents(page, pageLength, order)
 	}
-	
-	// Extract values from unique events map and sort them
-	events := make([]EventData, 0, len(idx.uniqueEvents))
-	for _, event := range idx.uniqueEvents {
-		events = append(events, event)
-	}
-	
-	// Sort by the order key
-	sort.Slice(events, func(i, j int) bool {
-		return events[i].OrderKey < events[j].OrderKey
-	})
-	
-	return events
+	// Return unique events only
+	return idx.storage.GetUniqueEvents(page, pageLength, order)
 }
 
 // GetUniqueEventCount returns the number of unique events
 func (idx *Indexer) GetUniqueEventCount() int {
-	idx.eventsMux.RLock()
-	defer idx.eventsMux.RUnlock()
-	return len(idx.uniqueEvents)
+	count, _ := idx.storage.GetUniqueEventCount()
+	return count
 }
 
 // parseQueryParams parses pagination and ordering parameters from the request
@@ -199,32 +173,6 @@ func parseQueryParams(r *http.Request) (page int, pageLength int, order string, 
 	return page, pageLength, order, nil
 }
 
-// paginateEvents applies pagination and ordering to events
-func paginateEvents(events []EventData, page int, pageLength int, order string) ([]EventData, int) {
-	// Apply ordering
-	if order == "desc" {
-		// Reverse the order
-		reversed := make([]EventData, len(events))
-		for i, j := 0, len(events)-1; j >= 0; i, j = i+1, j-1 {
-			reversed[i] = events[j]
-		}
-		events = reversed
-	}
-	
-	// Calculate pagination
-	totalCount := len(events)
-	start := page * pageLength
-	if start >= totalCount {
-		return []EventData{}, totalCount
-	}
-	
-	end := start + pageLength
-	if end > totalCount {
-		end = totalCount
-	}
-	
-	return events[start:end], totalCount
-}
 
 // startHTTPServer starts a simple HTTP server to query indexed data
 func (idx *Indexer) startHTTPServer() {
@@ -237,8 +185,12 @@ func (idx *Indexer) startHTTPServer() {
 			return
 		}
 		
-		events := idx.GetEvents()
-		paginatedEvents, totalCount := paginateEvents(events, page, pageLength, order)
+		paginatedEvents, totalCount, err := idx.GetEvents(page, pageLength, order)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
 		
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -272,8 +224,12 @@ func (idx *Indexer) startHTTPServer() {
 			return
 		}
 		
-		events := idx.GetLatestOrderedEvents()
-		paginatedEvents, totalCount := paginateEvents(events, page, pageLength, order)
+		paginatedEvents, totalCount, err := idx.GetLatestOrderedEvents(page, pageLength, order)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
 		
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
