@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"sync"
 )
 
@@ -163,14 +164,90 @@ func (idx *Indexer) GetUniqueEventCount() int {
 	return len(idx.uniqueEvents)
 }
 
+// parseQueryParams parses pagination and ordering parameters from the request
+func parseQueryParams(r *http.Request) (page int, pageLength int, order string, err error) {
+	// Parse page parameter (default: 0)
+	pageStr := r.URL.Query().Get("page")
+	if pageStr == "" {
+		page = 0
+	} else {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil || page < 0 {
+			return 0, 0, "", fmt.Errorf("invalid page parameter: must be >= 0")
+		}
+	}
+	
+	// Parse pageLength parameter (default: 20)
+	pageLengthStr := r.URL.Query().Get("pageLength")
+	if pageLengthStr == "" {
+		pageLength = 20
+	} else {
+		pageLength, err = strconv.Atoi(pageLengthStr)
+		if err != nil || pageLength <= 0 || pageLength >= 100 {
+			return 0, 0, "", fmt.Errorf("invalid pageLength parameter: must be > 0 and < 100")
+		}
+	}
+	
+	// Parse order parameter (default: asc)
+	order = r.URL.Query().Get("order")
+	if order == "" {
+		order = "asc"
+	} else if order != "asc" && order != "desc" {
+		return 0, 0, "", fmt.Errorf("invalid order parameter: must be 'asc' or 'desc'")
+	}
+	
+	return page, pageLength, order, nil
+}
+
+// paginateEvents applies pagination and ordering to events
+func paginateEvents(events []EventData, page int, pageLength int, order string) ([]EventData, int) {
+	// Apply ordering
+	if order == "desc" {
+		// Reverse the order
+		reversed := make([]EventData, len(events))
+		for i, j := 0, len(events)-1; j >= 0; i, j = i+1, j-1 {
+			reversed[i] = events[j]
+		}
+		events = reversed
+	}
+	
+	// Calculate pagination
+	totalCount := len(events)
+	start := page * pageLength
+	if start >= totalCount {
+		return []EventData{}, totalCount
+	}
+	
+	end := start + pageLength
+	if end > totalCount {
+		end = totalCount
+	}
+	
+	return events[start:end], totalCount
+}
+
 // startHTTPServer starts a simple HTTP server to query indexed data
 func (idx *Indexer) startHTTPServer() {
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
+		// Parse query parameters
+		page, pageLength, order, err := parseQueryParams(r)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		
 		events := idx.GetEvents()
+		paginatedEvents, totalCount := paginateEvents(events, page, pageLength, order)
+		
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"count":  len(events),
-			"events": events,
+			"total_count": totalCount,
+			"page":        page,
+			"page_length": pageLength,
+			"order":       order,
+			"count":       len(paginatedEvents),
+			"events":      paginatedEvents,
 		})
 	})
 	
@@ -187,14 +264,28 @@ func (idx *Indexer) startHTTPServer() {
 	})
 	
 	http.HandleFunc("/events-latest-ordered", func(w http.ResponseWriter, r *http.Request) {
+		// Parse query parameters
+		page, pageLength, order, err := parseQueryParams(r)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		
 		events := idx.GetLatestOrderedEvents()
+		paginatedEvents, totalCount := paginateEvents(events, page, pageLength, order)
+		
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"count":               len(events),
+			"total_count":         totalCount,
+			"page":                page,
+			"page_length":         pageLength,
+			"order":               order,
+			"count":               len(paginatedEvents),
 			"unique_enabled":      idx.config.Unique >= 0,
 			"order_by_index":      idx.config.OrderBy,
 			"unique_key_index":    idx.config.Unique,
-			"events":              events,
+			"events":              paginatedEvents,
 		})
 	})
 	
