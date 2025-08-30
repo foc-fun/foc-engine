@@ -18,7 +18,7 @@ display_help() {
   echo
   echo "Examples:"
   echo "  $0 run --help"
-  echo "  $0 index --contract 0x123... --event Transfer --order-by 1 --start-block 100000 --rpc https://..."
+  echo "  $0 index --contract 0x123... --event Transfer --order-by 1 --unique 1 --start-block 100000 --rpc https://..."
 }
 
 # Parse subcommand

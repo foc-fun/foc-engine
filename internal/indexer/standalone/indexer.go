@@ -13,6 +13,7 @@ type Config struct {
 	Contract   string
 	Event      string
 	OrderBy    int
+	Unique     int // Key index for unique constraint (-1 to disable)
 	StartBlock uint64
 	RPC        string
 	Network    string
@@ -26,7 +27,8 @@ type EventData struct {
 	Keys            []string `json:"keys"`
 	Data            []string `json:"data"`
 	Timestamp       int64    `json:"timestamp"`
-	OrderKey        string   `json:"order_key"` // The key value used for ordering
+	OrderKey        string   `json:"order_key"`  // The key value used for ordering
+	UniqueKey       string   `json:"unique_key"` // The key value used for uniqueness constraint
 }
 
 // Indexer handles event indexing from Starknet
@@ -34,8 +36,9 @@ type Indexer struct {
 	config Config
 	
 	// In-memory storage
-	events    []EventData
-	eventsMux sync.RWMutex
+	events       []EventData                // All events (for backward compatibility)
+	uniqueEvents map[string]EventData       // Latest events by unique key
+	eventsMux    sync.RWMutex
 	
 	// State
 	currentBlock  uint64
@@ -49,6 +52,7 @@ func New(config Config) *Indexer {
 	return &Indexer{
 		config:       config,
 		events:       make([]EventData, 0),
+		uniqueEvents: make(map[string]EventData),
 		currentBlock: config.StartBlock,
 		stopChan:     make(chan struct{}),
 	}
@@ -92,9 +96,17 @@ func (idx *Indexer) storeEvents(events []EventData) {
 	idx.eventsMux.Lock()
 	defer idx.eventsMux.Unlock()
 	
-	idx.events = append(idx.events, events...)
+	for _, event := range events {
+		// Store in all events list (for backward compatibility)
+		idx.events = append(idx.events, event)
+		
+		// Store in unique events map if unique constraint is enabled
+		if idx.config.Unique >= 0 && event.UniqueKey != "" {
+			idx.uniqueEvents[event.UniqueKey] = event
+		}
+	}
 	
-	// Sort by the order key
+	// Sort all events by the order key
 	sort.Slice(idx.events, func(i, j int) bool {
 		return idx.events[i].OrderKey < idx.events[j].OrderKey
 	})
@@ -118,6 +130,39 @@ func (idx *Indexer) GetEventCount() int {
 	return len(idx.events)
 }
 
+// GetLatestOrderedEvents returns the latest events ordered by the order key with unique constraint
+func (idx *Indexer) GetLatestOrderedEvents() []EventData {
+	idx.eventsMux.RLock()
+	defer idx.eventsMux.RUnlock()
+	
+	if idx.config.Unique < 0 {
+		// No unique constraint, return all events ordered
+		eventsCopy := make([]EventData, len(idx.events))
+		copy(eventsCopy, idx.events)
+		return eventsCopy
+	}
+	
+	// Extract values from unique events map and sort them
+	events := make([]EventData, 0, len(idx.uniqueEvents))
+	for _, event := range idx.uniqueEvents {
+		events = append(events, event)
+	}
+	
+	// Sort by the order key
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].OrderKey < events[j].OrderKey
+	})
+	
+	return events
+}
+
+// GetUniqueEventCount returns the number of unique events
+func (idx *Indexer) GetUniqueEventCount() int {
+	idx.eventsMux.RLock()
+	defer idx.eventsMux.RUnlock()
+	return len(idx.uniqueEvents)
+}
+
 // startHTTPServer starts a simple HTTP server to query indexed data
 func (idx *Indexer) startHTTPServer() {
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
@@ -132,10 +177,24 @@ func (idx *Indexer) startHTTPServer() {
 	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"running":       idx.running,
-			"current_block": idx.currentBlock,
-			"event_count":   idx.GetEventCount(),
-			"config":        idx.config,
+			"running":             idx.running,
+			"current_block":       idx.currentBlock,
+			"event_count":         idx.GetEventCount(),
+			"unique_event_count":  idx.GetUniqueEventCount(),
+			"unique_enabled":      idx.config.Unique >= 0,
+			"config":              idx.config,
+		})
+	})
+	
+	http.HandleFunc("/events-latest-ordered", func(w http.ResponseWriter, r *http.Request) {
+		events := idx.GetLatestOrderedEvents()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"count":               len(events),
+			"unique_enabled":      idx.config.Unique >= 0,
+			"order_by_index":      idx.config.OrderBy,
+			"unique_key_index":    idx.config.Unique,
+			"events":              events,
 		})
 	})
 	
@@ -144,6 +203,7 @@ func (idx *Indexer) startHTTPServer() {
 	fmt.Println("Query endpoints:")
 	fmt.Printf("  http://localhost:%d/status - Get indexer status\n", port)
 	fmt.Printf("  http://localhost:%d/events - Get all indexed events\n", port)
+	fmt.Printf("  http://localhost:%d/events-latest-ordered - Get latest events with unique constraint\n", port)
 	
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		fmt.Printf("HTTP server error: %v\n", err)

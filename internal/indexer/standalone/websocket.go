@@ -88,13 +88,26 @@ func (idx *Indexer) subscribeToEvents(conn *websocket.Conn) error {
 		},
 	}
 	
-	// Debug: Print subscription request
-	subscribeJSON, _ := json.MarshalIndent(subscribeCall, "", "  ")
-	fmt.Printf("DEBUG: Sending subscription request:\n%s\n", string(subscribeJSON))
-	
 	// Send subscription request
 	if err := conn.WriteJSON(subscribeCall); err != nil {
 		return fmt.Errorf("failed to send subscription request: %v", err)
+	}
+	
+	// Wait for subscription response
+	_, message, err := conn.ReadMessage()
+	if err != nil {
+		return fmt.Errorf("failed to read subscription response: %v", err)
+	}
+	
+	// Parse the response
+	var response WebSocketResponse
+	if err := json.Unmarshal(message, &response); err != nil {
+		return fmt.Errorf("failed to parse subscription response: %v", err)
+	}
+	
+	// Check if subscription was successful
+	if response.Error != nil {
+		return fmt.Errorf("subscription failed: %v", response.Error)
 	}
 	
 	fmt.Printf("Subscribed to events from contract %s\n", contractAddress)
@@ -141,17 +154,12 @@ func (idx *Indexer) handleWebSocketMessages(conn *websocket.Conn) {
 
 // processWebSocketMessage processes a single WebSocket message
 func (idx *Indexer) processWebSocketMessage(message []byte) {
-	// Debug: Print raw message
-	fmt.Printf("DEBUG: Received WebSocket message: %s\n", string(message))
-	
 	// First, try to parse as a generic response to check the method
 	var response WebSocketResponse
 	if err := json.Unmarshal(message, &response); err != nil {
 		fmt.Printf("Error unmarshalling WebSocket message: %v\n", err)
 		return
 	}
-	
-	fmt.Printf("DEBUG: Parsed response - Method: %s, ID: %d\n", response.Method, response.ID)
 	
 	// Check if this is a subscription confirmation
 	if response.Method == "" && response.Result != nil {
@@ -161,7 +169,6 @@ func (idx *Indexer) processWebSocketMessage(message []byte) {
 	
 	// Check if this is an event notification
 	if response.Method == "starknet_subscriptionEvents" {
-		fmt.Printf("DEBUG: Processing event notification\n")
 		// Parse as event data
 		var eventData WebSocketEventData
 		if err := json.Unmarshal(message, &eventData); err != nil {
@@ -170,8 +177,6 @@ func (idx *Indexer) processWebSocketMessage(message []byte) {
 		}
 		
 		idx.processEvent(eventData)
-	} else {
-		fmt.Printf("DEBUG: Unknown message method: %s\n", response.Method)
 	}
 }
 
@@ -184,20 +189,25 @@ func (idx *Indexer) processEvent(wsEvent WebSocketEventData) {
 		expectedSelector := idx.normalizeEventSelector(idx.eventSelector)
 		
 		if receivedSelector != expectedSelector {
-			fmt.Printf("DEBUG: Filtering out event with selector %s (expected %s)\n", receivedSelector, expectedSelector)
-			return
+			return // Silently filter out events that don't match
 		}
 	}
 	
-	fmt.Printf("DEBUG: Processing matching event with selector %s\n", wsEvent.Params.Result.Keys[0])
-	
-	// Extract order key based on the configured index
+	// Extract order key and unique key based on the configured indices
 	allValues := append(wsEvent.Params.Result.Keys, wsEvent.Params.Result.Data...)
+	
+	// Extract order key
 	var orderKey string
 	if idx.config.OrderBy >= 0 && idx.config.OrderBy < len(allValues) {
 		orderKey = allValues[idx.config.OrderBy]
 	} else {
 		orderKey = fmt.Sprintf("%020d", wsEvent.Params.Result.BlockNumber)
+	}
+	
+	// Extract unique key if unique constraint is enabled
+	var uniqueKey string
+	if idx.config.Unique >= 0 && idx.config.Unique < len(allValues) {
+		uniqueKey = allValues[idx.config.Unique]
 	}
 	
 	// Create EventData
@@ -209,6 +219,7 @@ func (idx *Indexer) processEvent(wsEvent WebSocketEventData) {
 		Data:            wsEvent.Params.Result.Data,
 		Timestamp:       time.Now().Unix(),
 		OrderKey:        orderKey,
+		UniqueKey:       uniqueKey,
 	}
 	
 	// Store the event
@@ -248,14 +259,15 @@ func (idx *Indexer) tryWebSocket() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to WebSocket: %v", err)
 	}
-	defer conn.Close()
 	
-	// Subscribe to events
+	// Subscribe to events - if this fails, close connection and return error
 	if err := idx.subscribeToEvents(conn); err != nil {
+		conn.Close()
 		return fmt.Errorf("failed to subscribe to events: %v", err)
 	}
 	
 	// Handle incoming messages
+	defer conn.Close()
 	idx.handleWebSocketMessages(conn)
 	
 	return nil

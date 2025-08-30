@@ -15,6 +15,7 @@ func main() {
 	contract := flag.String("contract", "", "Contract address to index events from (required)")
 	event := flag.String("event", "", "Event name to index (required)")
 	orderBy := flag.Int("order-by", 0, "Key index to order events by (required)")
+	unique := flag.Int("unique", -1, "Key index for unique constraint (-1 to disable)")
 	startBlock := flag.Uint64("start-block", 0, "Starting block number (required)")
 	rpc := flag.String("rpc", "", "RPC endpoint URL (required)")
 	network := flag.String("network", "sepolia", "Network to connect to (devnet, sepolia, mainnet)")
@@ -53,6 +54,7 @@ func main() {
 		Contract:   *contract,
 		Event:      *event,
 		OrderBy:    *orderBy,
+		Unique:     *unique,
 		StartBlock: *startBlock,
 		RPC:        *rpc,
 		Network:    *network,

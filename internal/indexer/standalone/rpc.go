@@ -137,6 +137,7 @@ func (idx *Indexer) getEventsAtBlock(blockNumber uint64) ([]EventData, error) {
 	var events []EventData
 	for _, event := range eventsResult.Events {
 		orderKey := idx.extractOrderKey(event)
+		uniqueKey := idx.extractUniqueKey(event)
 		
 		eventData := EventData{
 			BlockNumber:     event.BlockNumber,
@@ -146,6 +147,7 @@ func (idx *Indexer) getEventsAtBlock(blockNumber uint64) ([]EventData, error) {
 			Data:            event.Data,
 			Timestamp:       time.Now().Unix(),
 			OrderKey:        orderKey,
+			UniqueKey:       uniqueKey,
 		}
 		events = append(events, eventData)
 	}
@@ -231,4 +233,18 @@ func (idx *Indexer) extractOrderKey(event Event) string {
 	}
 	
 	return allValues[idx.config.OrderBy]
+}
+
+// extractUniqueKey extracts the unique key value from the event
+func (idx *Indexer) extractUniqueKey(event Event) string {
+	// The unique index refers to the position in the combined keys+data array
+	// Keys come first, then data
+	allValues := append(event.Keys, event.Data...)
+	
+	if idx.config.Unique < 0 || idx.config.Unique >= len(allValues) {
+		// Invalid index or unique constraint disabled
+		return ""
+	}
+	
+	return allValues[idx.config.Unique]
 }
