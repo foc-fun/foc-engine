@@ -1,6 +1,7 @@
 package standalone
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -233,6 +234,47 @@ func (s *Storage) GetUniqueEventCount() (int, error) {
 // ClearAll removes all data from storage (useful for testing)
 func (s *Storage) ClearAll() error {
 	return s.db.DropAll()
+}
+
+const lastProcessedBlockKey = "meta:last_processed_block"
+
+// SetLastProcessedBlock stores the last processed block number
+func (s *Storage) SetLastProcessedBlock(blockNumber uint64) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		// Convert uint64 to bytes
+		blockBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(blockBytes, blockNumber)
+		
+		return txn.Set([]byte(lastProcessedBlockKey), blockBytes)
+	})
+}
+
+// GetLastProcessedBlock retrieves the last processed block number
+// Returns 0 if no block has been processed yet
+func (s *Storage) GetLastProcessedBlock() (uint64, error) {
+	var blockNumber uint64
+	
+	err := s.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(lastProcessedBlockKey))
+		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				// No block processed yet, return 0
+				blockNumber = 0
+				return nil
+			}
+			return err
+		}
+		
+		return item.Value(func(val []byte) error {
+			if len(val) != 8 {
+				return fmt.Errorf("invalid block number data length: %d", len(val))
+			}
+			blockNumber = binary.BigEndian.Uint64(val)
+			return nil
+		})
+	})
+	
+	return blockNumber, err
 }
 
 // reverseString reverses a string for reverse ordering

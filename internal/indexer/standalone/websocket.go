@@ -82,7 +82,7 @@ func (idx *Indexer) subscribeToEvents(conn *websocket.Conn) error {
 		Method:  "starknet_subscribeEvents",
 		Params: map[string]interface{}{
 			"block_id": map[string]interface{}{
-				"block_number": int(idx.config.StartBlock),
+				"block_number": int(idx.currentBlock),
 			},
 			"from_address": contractAddress,
 		},
@@ -253,7 +253,7 @@ func (idx *Indexer) normalizeEventSelector(selector string) string {
 
 // tryWebSocket attempts to start WebSocket-based indexing
 func (idx *Indexer) tryWebSocket() error {
-	fmt.Printf("Starting WebSocket indexer from block %d\n", idx.config.StartBlock)
+	fmt.Printf("Starting WebSocket indexer from block %d\n", idx.currentBlock)
 	fmt.Printf("Indexing events from contract: %s\n", idx.config.Contract)
 	fmt.Printf("Event: %s (selector: %s)\n", idx.config.Event, idx.eventSelector)
 	

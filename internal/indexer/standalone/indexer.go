@@ -17,6 +17,7 @@ type Config struct {
 	StartBlock uint64
 	RPC        string
 	Network    string
+	DataDir    string // Directory for BadgerDB storage
 }
 
 // EventData represents a single indexed event
@@ -45,18 +46,54 @@ type Indexer struct {
 	eventSelector string // Cached event selector
 }
 
+// determineStartingBlock determines the starting block for indexing
+// Priority: max(lastProcessedBlock + 1, configStartBlock)
+func determineStartingBlock(storage *Storage, configStartBlock uint64) (uint64, error) {
+	lastProcessedBlock, err := storage.GetLastProcessedBlock()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get last processed block: %v", err)
+	}
+	
+	// If no blocks have been processed yet, use config start block
+	if lastProcessedBlock == 0 {
+		return configStartBlock, nil
+	}
+	
+	// Resume from the block after the last processed block
+	resumeBlock := lastProcessedBlock + 1
+	
+	// If config start block is ahead of our resume point, use config start block
+	// This handles cases where user wants to skip ahead or restart from a later point
+	if configStartBlock > resumeBlock {
+		return configStartBlock, nil
+	}
+	
+	return resumeBlock, nil
+}
+
 // New creates a new standalone indexer
 func New(config Config) (*Indexer, error) {
 	// Initialize storage
-	storage, err := NewStorage("./indexer_db")
+	dataDir := config.DataDir
+	if dataDir == "" {
+		dataDir = "./indexer_db" // Default fallback
+	}
+	storage, err := NewStorage(dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize storage: %v", err)
+	}
+	
+	// Determine starting block: use last processed block or config start block
+	startingBlock, err := determineStartingBlock(storage, config.StartBlock)
+	if err != nil {
+		storage.Close() // Clean up on error
+		return nil, fmt.Errorf("failed to determine starting block: %v", err)
 	}
 	
 	return &Indexer{
 		config:       config,
 		storage:      storage,
-		currentBlock: config.StartBlock,
+		currentBlock: startingBlock,
 		stopChan:     make(chan struct{}),
 	}, nil
 }
@@ -68,8 +105,7 @@ func (idx *Indexer) Start() error {
 	// Compute and cache the event selector once
 	idx.eventSelector = idx.computeEventSelector(idx.config.Event)
 	
-	// Set current block to start block
-	idx.currentBlock = idx.config.StartBlock
+	// currentBlock is already set correctly in New() from determineStartingBlock()
 	
 	// Start HTTP server for querying indexed data (only once)
 	go idx.startHTTPServer()
@@ -121,6 +157,16 @@ func (idx *Indexer) GetEvents(page int, pageLength int, order string) ([]EventDa
 func (idx *Indexer) GetEventCount() int {
 	count, _ := idx.storage.GetEventCount()
 	return count
+}
+
+// GetLastProcessedBlock returns the last processed block from storage
+func (idx *Indexer) GetLastProcessedBlock() (uint64, error) {
+	return idx.storage.GetLastProcessedBlock()
+}
+
+// GetCurrentBlock returns the current block the indexer will process next
+func (idx *Indexer) GetCurrentBlock() uint64 {
+	return idx.currentBlock
 }
 
 // GetLatestOrderedEvents returns the latest events ordered by the order key with unique constraint

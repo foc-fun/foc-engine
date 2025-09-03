@@ -7,7 +7,7 @@ import (
 
 // startPollingLoop starts the polling-based indexer loop
 func (idx *Indexer) startPollingLoop() error {
-	fmt.Printf("Starting polling indexer from block %d\n", idx.config.StartBlock)
+	fmt.Printf("Starting polling indexer from block %d\n", idx.currentBlock)
 	fmt.Printf("Indexing events from contract: %s\n", idx.config.Contract)
 	fmt.Printf("Event: %s (selector: %s)\n", idx.config.Event, idx.eventSelector)
 	
@@ -65,6 +65,11 @@ func (idx *Indexer) startPollingLoop() error {
 				
 				if totalEventsInRange > 0 {
 					fmt.Printf("  Total events stored: %d\n", idx.GetEventCount())
+				}
+				
+				// Persist the last processed block to database
+				if err := idx.storage.SetLastProcessedBlock(endBlock); err != nil {
+					fmt.Printf("Warning: Failed to save last processed block %d: %v\n", endBlock, err)
 				}
 				
 				// Move to next range
