@@ -1,0 +1,80 @@
+# Mainnet Configuration
+labels:
+  redis:
+    name: redis
+  mongo:
+    name: mongo
+  api:
+    name: api
+  indexer:
+    name: indexer
+  standaloneIndexer:
+    name: standalone-indexer
+
+ports:
+  redis: 6379
+  mongo: 27017
+  api: 8080
+  indexer: 8085
+  standaloneIndexer: 8080
+
+volumes:
+  redis:
+    name: redis-data
+    class: standard-rwo
+    storage: 20Gi  # Increased for mainnet
+  mongo:
+    name: mongo-data
+    class: standard-rwo
+    storage: 100Gi  # Increased for mainnet
+  standaloneIndexer:
+    name: standalone-indexer-data
+    class: standard-rwo
+    storage: 50Gi  # Increased for mainnet
+
+deployments:
+  staticIp: pow-game-mainnet-static-ip
+  sha: aabbccdd
+  redis:
+    replicas: 1
+    image: redis
+    tag: 7.2.4-alpine
+  mongo:
+    replicas: 1
+    image: mongo
+    tag: 8.0.11
+  api:
+    replicas: 1
+    image: brandonjroberts/foc-engine-api
+  indexer:
+    replicas: 0
+    image: brandonjroberts/foc-engine-indexer
+  standaloneIndexer:
+    replicas: 1
+    image: brandonjroberts/foc-engine-standalone-indexer
+
+# Mainnet paymaster configuration
+paymaster:
+  network: mainnet
+  apiUrl: "https://starknet.paymaster.avnu.fi"  # Mainnet paymaster URL
+  apiKey: abc-def  # TODO: Replace with actual Mainnet API key from env
+
+# Mainnet contract addresses (TODO: Update with actual mainnet deployed addresses)
+onchain:
+  registryContractAddress: "0x06ff983d4d86dc6fd6f2d94264932dd710c700c22c8c7f075821bb4447f4300b"
+  accountContractAddress: "0x05cccff40f83b960791e0d04b8cd494000d9490661657f93d02dc9a0a1617733"
+  accountsClassHash: "0x0577fa6444c4fad6a37897a7684db92cb9244e053440fdd71a076341ae7faa0a"
+
+# Mainnet standalone indexer configuration
+standaloneIndexer:
+  contractAddress: "0x05b4ff547559e1b0681e8f62a0d420f83009a6491f4927f3f158b932abff5f7f"
+  eventName: "BalanceUpdated"
+  rpcUrl: ""  # Set via STANDALONE_INDEXER_RPC_URL environment variable
+  startBlock: "1986904"
+  orderBy: "3"
+  unique: "1"
+
+# Mainnet-specific ingress configuration
+ingress:
+  host: "api.pow-game.com"
+  className: "gce"
