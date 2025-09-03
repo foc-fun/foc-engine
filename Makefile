@@ -31,14 +31,14 @@ helm-uninstall:
 helm-install:
 	$(eval COMMIT_SHA := $(shell git rev-parse --short HEAD))
 	@echo "Installing helm chart..."
-	helm install --set avnu.apiKey=$(AVNU_API_KEY) --set deployments.sha=$(COMMIT_SHA) foc-engine-infra infra
+	helm install --set paymaster.apiKey=$(AVNU_API_KEY) --set deployments.sha=$(COMMIT_SHA) foc-engine-infra infra
 
 helm-template:
 	$(eval COMMIT_SHA := $(shell git rev-parse --short HEAD))
 	@echo "Templating helm chart..."
-	helm template --set avnu.apiKey=$(AVNU_API_KEY) --set deployments.sha=$(COMMIT_SHA) foc-engine-infra infra
+	helm template --set paymaster.apiKey=$(AVNU_API_KEY) --set deployments.sha=$(COMMIT_SHA) foc-engine-infra infra
 
 helm-upgrade:
 	$(eval COMMIT_SHA := $(shell git rev-parse --short HEAD))
 	@echo "Upgrading helm release..."
-	helm upgrade --set avnu.apiKey=$(AVNU_API_KEY) --set deployments.sha=$(COMMIT_SHA) foc-engine-infra infra
+	helm upgrade --set paymaster.apiKey=$(AVNU_API_KEY) --set deployments.sha=$(COMMIT_SHA) foc-engine-infra infra

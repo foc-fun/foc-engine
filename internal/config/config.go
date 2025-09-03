@@ -27,11 +27,17 @@ type IndexerConfig struct {
 	StartAt *int   `yaml:"StartAt,omitempty"` // Optional field, can be nil
 }
 
+type PaymasterConfig struct {
+	Network    string `yaml:"Network"`
+	ApiUrl     string `yaml:"ApiUrl"`
+}
+
 type Config struct {
-	Rpc     RpcConfig     `yaml:"Rpc"`
-	Api     ApiConfig     `yaml:"Api"`
-	Indexer IndexerConfig `yaml:"Indexer"`
-	Modules []string      `yaml:"Modules"`
+	Rpc       RpcConfig       `yaml:"Rpc"`
+	Api       ApiConfig       `yaml:"Api"`
+	Indexer   IndexerConfig   `yaml:"Indexer"`
+	Paymaster PaymasterConfig `yaml:"Paymaster"`
+	Modules   []string        `yaml:"Modules"`
 }
 
 var Conf *Config
@@ -76,4 +82,57 @@ func ModuleEnabled(module FocModule) bool {
 		}
 	}
 	return false
+}
+
+// getEnvOrDefault returns environment variable value or default if not set
+func getEnvOrDefault(envKey, defaultValue string) string {
+	if value := os.Getenv(envKey); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// GetPaymasterNetwork returns the network to use for paymaster, with fallback logic
+func GetPaymasterNetwork() string {
+	// Priority: environment variable > config file > default
+	if network := os.Getenv("PAYMASTER_NETWORK"); network != "" {
+		return network
+	}
+	if Conf != nil && Conf.Paymaster.Network != "" {
+		return Conf.Paymaster.Network
+	}
+	return "sepolia"
+}
+
+// GetPaymasterApiUrl returns the paymaster API URL based on network
+func GetPaymasterApiUrl() string {
+	// Priority: environment variable > config file > network-based default
+	if apiUrl := os.Getenv("PAYMASTER_API_URL"); apiUrl != "" {
+		return apiUrl
+	}
+	if Conf != nil && Conf.Paymaster.ApiUrl != "" {
+		return Conf.Paymaster.ApiUrl
+	}
+	
+	// Network-based defaults
+	network := GetPaymasterNetwork()
+	switch network {
+	case "mainnet":
+		return "https://starknet.paymaster.avnu.fi"
+	case "sepolia":
+		return "https://sepolia.paymaster.avnu.fi"
+	default:
+		return "https://sepolia.paymaster.avnu.fi"
+	}
+}
+
+// GetPaymasterApiKey returns the API key for the paymaster service
+func GetPaymasterApiKey() string {
+  // Check if environment variable is set
+  if key := os.Getenv("AVNU_PAYMASTER_API_KEY"); key != "" {
+    return key
+  } else {
+    fmt.Println("Warning: AVNU_PAYMASTER_API_KEY environment variable is not set. Proceeding without an API key.")
+    return ""
+  }
 }
