@@ -25,33 +25,50 @@ func (idx *Indexer) startPollingLoop() error {
 				continue
 			}
 			
-			// Index events from current block to latest (process a few blocks at a time)
+			// Index events from current block to latest (process larger ranges at a time)
 			endBlock := latestBlock
-			if endBlock > idx.currentBlock+10 {
-				endBlock = idx.currentBlock + 10 // Process 10 blocks at a time
+			if endBlock > idx.currentBlock+100 {
+				endBlock = idx.currentBlock + 100 // Process 100 blocks at a time
 			}
 			
 			if idx.currentBlock <= endBlock {
 				fmt.Printf("Processing blocks %d to %d (latest: %d)\n", idx.currentBlock, endBlock, latestBlock)
 				
-				for blockNum := idx.currentBlock; blockNum <= endBlock && idx.running; blockNum++ {
-					events, err := idx.getEventsAtBlock(blockNum)
+				// Process events in this range with continuation token support
+				continuationToken := ""
+				totalEventsInRange := 0
+				
+				for {
+					events, nextToken, err := idx.getEventsInRange(idx.currentBlock, endBlock, continuationToken)
 					if err != nil {
-						fmt.Printf("Error getting events at block %d: %v\n", blockNum, err)
-						continue
+						fmt.Printf("Error getting events in range %d-%d: %v\n", idx.currentBlock, endBlock, err)
+						break
 					}
 					
 					if len(events) > 0 {
 						if err := idx.storeEvents(events); err != nil {
 							fmt.Printf("Error storing events: %v\n", err)
-							continue
+							break
 						}
-						fmt.Printf("Indexed %d events at block %d\n", len(events), blockNum)
-						fmt.Printf("  Total events stored: %d\n", idx.GetEventCount())
+						totalEventsInRange += len(events)
+						fmt.Printf("Indexed %d events (chunk), total in range: %d\n", len(events), totalEventsInRange)
 					}
 					
-					idx.currentBlock = blockNum + 1
+					// If no continuation token, we've processed all events in this range
+					if nextToken == "" {
+						break
+					}
+					
+					continuationToken = nextToken
+					fmt.Printf("Processing next chunk with continuation token...\n")
 				}
+				
+				if totalEventsInRange > 0 {
+					fmt.Printf("  Total events stored: %d\n", idx.GetEventCount())
+				}
+				
+				// Move to next range
+				idx.currentBlock = endBlock + 1
 			}
 			
 			// Wait before next poll (shorter interval if we're catching up)

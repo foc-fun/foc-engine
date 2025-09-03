@@ -88,58 +88,81 @@ func (idx *Indexer) getLatestBlockNumber() (uint64, error) {
 	return blockNum, nil
 }
 
-// getEventsAtBlock retrieves events at a specific block
-func (idx *Indexer) getEventsAtBlock(blockNumber uint64) ([]EventData, error) {
+// getEventsInRange retrieves events in a block range with continuation token support
+func (idx *Indexer) getEventsInRange(fromBlock, toBlock uint64, continuationToken string) ([]EventData, string, error) {
 	// Normalize contract address
 	contractAddress := idx.normalizeAddress(idx.config.Contract)
 	
 	// Use cached event selector
 	eventSelector := idx.eventSelector
 	
-	// Create event filter - if event selector is provided, use it as a filter
-	filter := EventFilter{
-		FromBlock: &BlockID{BlockNumber: &blockNumber},
-		ToBlock:   &BlockID{BlockNumber: &blockNumber},
-		Address:   contractAddress,
+	// Build the parameters object according to Starknet JSON-RPC spec
+	params := map[string]interface{}{
+		"from_block": &BlockID{BlockNumber: &fromBlock},
+		"to_block":   &BlockID{BlockNumber: &toBlock},
+		"chunk_size": 1000,
 	}
 	
-	// Only add keys filter if we have a valid event selector (hex format)
+	// Add optional filter parameters
+	if contractAddress != "" {
+		params["address"] = contractAddress
+	}
 	if strings.HasPrefix(eventSelector, "0x") {
-		filter.Keys = [][]string{{eventSelector}}
+		params["keys"] = [][]string{{eventSelector}}
+	}
+	if continuationToken != "" {
+		params["continuation_token"] = continuationToken
 	}
 	
 	call := StarknetRpcCall{
 		ID:      1,
 		Jsonrpc: "2.0",
 		Method:  "starknet_getEvents",
-		Params: map[string]interface{}{
-			"filter": filter,
-		},
+		Params:  []interface{}{params},
 	}
 	
 	response, err := idx.makeRPCCall(call)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	
-	// Parse events from response
-	eventsJson, err := json.Marshal(response.Result)
+	// Parse the response result structure
+	resultMap, ok := response.Result.(map[string]interface{})
+	if !ok {
+		return nil, "", fmt.Errorf("unexpected response result format")
+	}
+	
+	// Extract events array
+	eventsInterface, ok := resultMap["events"]
+	if !ok {
+		return nil, "", fmt.Errorf("no events field in response")
+	}
+	
+	eventsJson, err := json.Marshal(eventsInterface)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal events result: %v", err)
+		return nil, "", fmt.Errorf("failed to marshal events: %v", err)
 	}
 	
-	var eventsResult EventsResult
-	if err := json.Unmarshal(eventsJson, &eventsResult); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal events result: %v", err)
+	var events []Event
+	if err := json.Unmarshal(eventsJson, &events); err != nil {
+		return nil, "", fmt.Errorf("failed to unmarshal events: %v", err)
+	}
+	
+	// Extract continuation token (if present)
+	var nextToken string
+	if token, ok := resultMap["continuation_token"]; ok {
+		if tokenStr, ok := token.(string); ok {
+			nextToken = tokenStr
+		}
 	}
 	
 	// Convert to EventData
-	var events []EventData
-	for _, event := range eventsResult.Events {
+	var eventData []EventData
+	for _, event := range events {
 		orderKey := idx.extractOrderKey(event)
 		uniqueKey := idx.extractUniqueKey(event)
 		
-		eventData := EventData{
+		data := EventData{
 			BlockNumber:     event.BlockNumber,
 			TransactionHash: event.TransactionHash,
 			FromAddress:     event.FromAddress,
@@ -149,10 +172,16 @@ func (idx *Indexer) getEventsAtBlock(blockNumber uint64) ([]EventData, error) {
 			OrderKey:        orderKey,
 			UniqueKey:       uniqueKey,
 		}
-		events = append(events, eventData)
+		eventData = append(eventData, data)
 	}
 	
-	return events, nil
+	return eventData, nextToken, nil
+}
+
+// getEventsAtBlock retrieves events at a specific block (legacy function for backward compatibility)
+func (idx *Indexer) getEventsAtBlock(blockNumber uint64) ([]EventData, error) {
+	events, _, err := idx.getEventsInRange(blockNumber, blockNumber, "")
+	return events, err
 }
 
 // makeRPCCall makes a JSON-RPC call to the Starknet node
