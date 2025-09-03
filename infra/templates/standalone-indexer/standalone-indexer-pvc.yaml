@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.labels.standaloneIndexer.name }}-volume-claim
+  labels:
+    app: {{ .Values.labels.standaloneIndexer.name }}
+spec:
+  storageClassName: {{ .Values.volumes.standaloneIndexer.class }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.volumes.standaloneIndexer.storage }}

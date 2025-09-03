@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.labels.standaloneIndexer.name }}
+  labels:
+    app: {{ .Values.labels.standaloneIndexer.name }}
+spec:
+  replicas: {{ .Values.deployments.standaloneIndexer.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.labels.standaloneIndexer.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.labels.standaloneIndexer.name }}
+    spec:
+      containers:
+        - name: {{ .Values.labels.standaloneIndexer.name }}
+          image: {{ .Values.deployments.standaloneIndexer.image }}:{{ .Chart.AppVersion }}-{{ .Values.deployments.sha }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.ports.standaloneIndexer }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.labels.standaloneIndexer.name }}-config
+          volumeMounts:
+            - name: data-storage
+              mountPath: /data
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: {{ .Values.ports.standaloneIndexer }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: {{ .Values.ports.standaloneIndexer }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          # Resource limits
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.labels.standaloneIndexer.name }}-volume-claim

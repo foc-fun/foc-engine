@@ -1,0 +1,27 @@
+FROM golang:1.23.4-alpine AS builder
+
+RUN apk add --no-cache bash curl git jq yq
+
+# Copy over the app
+WORKDIR /app
+COPY ./go.mod ./go.sum ./
+RUN go mod download
+COPY ./ .
+
+# Build the standalone indexer binary
+RUN go build -o foc-engine-index ./cmd/index/main.go
+
+FROM alpine:latest
+
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+
+# Copy the binary from builder stage
+COPY --from=builder /app/foc-engine-index .
+
+# Expose the HTTP API port
+EXPOSE 8080
+
+# Run the standalone indexer with environment variables
+CMD ["sh", "-c", "./foc-engine-index --contract \"$INDEXER_CONTRACT_ADDRESS\" --event \"$INDEXER_EVENT_NAME\" --rpc \"$INDEXER_RPC_URL\" --start-block \"$INDEXER_START_BLOCK\" --order-by \"$INDEXER_ORDER_BY\" --unique \"$INDEXER_UNIQUE\" --data-dir \"$INDEXER_DATA_DIR\""]
