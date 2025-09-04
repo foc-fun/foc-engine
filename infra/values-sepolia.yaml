@@ -56,7 +56,7 @@ deployments:
 # Sepolia-specific paymaster configuration
 paymaster:
   network: sepolia
-  apiUrl: "https://sepolia.paymaster.avnu.fi"
+  apiUrl: "https://sepolia.api.avnu.fi"
   apiKey: abc-def
 
 # Sepolia contract addresses (current values from your existing deployment)

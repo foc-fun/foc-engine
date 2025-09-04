@@ -20,7 +20,7 @@ Indexer:
   Port: 8085
 Paymaster:
   Network: sepolia
-  ApiUrl: "https://sepolia.paymaster.avnu.fi"
+  ApiUrl: "https://sepolia.api.avnu.fi"
 Modules:
   - AVNU_PAYMASTER
 Onchain:

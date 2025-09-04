@@ -21,7 +21,7 @@ Indexer:
   StartAt: 86225
 Paymaster:
   Network: sepolia
-  ApiUrl: "https://sepolia.paymaster.avnu.fi"
+  ApiUrl: "https://sepolia.api.avnu.fi"
 Modules:
   - AVNU_PAYMASTER
   - ACCOUNTS

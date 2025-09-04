@@ -118,11 +118,11 @@ func GetPaymasterApiUrl() string {
 	network := GetPaymasterNetwork()
 	switch network {
 	case "mainnet":
-		return "https://starknet.paymaster.avnu.fi"
+		return "https://starknet.api.avnu.fi"
 	case "sepolia":
-		return "https://sepolia.paymaster.avnu.fi"
+		return "https://sepolia.api.avnu.fi"
 	default:
-		return "https://sepolia.paymaster.avnu.fi"
+		return "https://sepolia.api.avnu.fi"
 	}
 }
 

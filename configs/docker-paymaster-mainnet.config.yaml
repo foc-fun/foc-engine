@@ -1,0 +1,29 @@
+Rpc:
+  Host: starknet-mainnet.public.blastapi.io/rpc/v0_7
+Api:
+  Host: 0.0.0.0
+  Port: 8080
+  AllowOrigins:
+    - '*'
+  AllowMethods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+  AllowHeaders:
+    - Content-Type
+  Production: true
+  Admin: true
+Indexer:
+  Host: indexer
+  Port: 8085
+Paymaster:
+  Network: mainnet
+  ApiUrl: "https://starknet.api.avnu.fi"
+Modules:
+  - AVNU_PAYMASTER
+Onchain:
+  RegistryAddress: "0x079ae51ea3f139128ee7fa1e7406f75ec98853337188e83d574ac51c87b2d458"
+  AccountsAddress: "0x07caa583a14ab8588b820f41d7bbe92bfc9b7f5c1f48de91a5ddead708dff814"
+  AccountsClassHash: "0x0577fa6444c4fad6a37897a7684db92cb9244e053440fdd71a076341ae7faa0a"
