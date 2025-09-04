@@ -5,11 +5,8 @@ metadata:
   labels:
     app: {{ .Values.labels.standaloneIndexer.name }}
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
-    - name: http
-      port: {{ .Values.ports.standaloneIndexer }}
-      targetPort: {{ .Values.ports.standaloneIndexer }}
-      protocol: TCP
+    - port: {{ .Values.ports.standaloneIndexer }}
   selector:
     app: {{ .Values.labels.standaloneIndexer.name }}
