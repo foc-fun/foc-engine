@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"os"
 
 	"github.com/NethermindEth/starknet.go/typedData"
+	"github.com/b-j-roberts/foc-engine/internal/config"
 	routeutils "github.com/b-j-roberts/foc-engine/routes/utils"
 )
 
@@ -45,14 +45,14 @@ func BuildGaslessTx(w http.ResponseWriter, r *http.Request) {
 	// TODO: Check api key is set
 	// TODO: Perform call checking and validation
 	// TODO: Move this to a separate package for better organization
-	baseUrl := "https://sepolia.api.avnu.fi" // https://starknet.api.avnu.fi
+	baseUrl := config.GetPaymasterApiUrl()
 	avnuPaymasterUrl := baseUrl + "/paymaster/v1/build-typed-data"
 	requestBody := map[string]interface{}{
 		"userAddress": input.Account,
 		"calls":       input.Calls, // TODO: Format calls if necessary ( compile & hexify )
 	}
 	requestHeaders := map[string]string{
-		"api-key": os.Getenv("AVNU_PAYMASTER_API_KEY"), // TODO: Allow usage of different API keys for diff inputs?
+		"api-key": config.GetPaymasterApiKey(),
 	}
 
 	if input.DeploymentData != nil {
@@ -126,7 +126,7 @@ func SendGaslessTx(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseUrl := "https://sepolia.api.avnu.fi" // https://starknet.api.avnu.fi
+	baseUrl := config.GetPaymasterApiUrl()
 	avnuPaymasterUrl := baseUrl + "/paymaster/v1/execute"
 	requestBody := map[string]interface{}{
 		"userAddress": input.Account,
@@ -134,7 +134,7 @@ func SendGaslessTx(w http.ResponseWriter, r *http.Request) {
 		"signature":   input.Signature,
 	}
 	requestHeaders := map[string]string{
-		"api-key": os.Getenv("AVNU_PAYMASTER_API_KEY"), // TODO: Allow usage of different API keys for diff inputs?
+		"api-key": config.GetPaymasterApiKey(),
 	}
 	if input.DeploymentData != nil {
 		requestBody["deploymentData"] = map[string]interface{}{

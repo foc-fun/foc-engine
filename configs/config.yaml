@@ -18,6 +18,9 @@ Api:
 Indexer:
   Host: localhost
   Port: 8085
+Paymaster:
+  Network: sepolia
+  ApiUrl: ""
 Modules:
   - AVNU_PAYMASTER
   - ACCOUNTS

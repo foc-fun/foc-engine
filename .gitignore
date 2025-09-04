@@ -1,2 +1,6 @@
 .foc_env
 .env
+index
+indexer_db/
+foc-engine-index
+prompt

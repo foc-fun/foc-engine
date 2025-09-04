@@ -4,11 +4,23 @@ metadata:
   name: foc-engine-ingress
   annotations:
     kubernetes.io/ingress.global-static-ip-name: {{ .Values.deployments.staticIp }}
-    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.class: {{ .Values.ingress.className | default "gce" | quote }}
+    {{- if .Values.ingress.managedCertificate.enabled }}
+    networking.gke.io/managed-certificates: {{ .Values.ingress.managedCertificate.name | quote }}
+    {{- end }}
 spec:
   rules:
-  - http:
+  {{- if .Values.ingress.host }}
+  - host: {{ .Values.ingress.host }}
+    http:
       paths:
+      - path: /indexer
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.labels.standaloneIndexer.name }}
+            port:
+              number: {{ .Values.ports.standaloneIndexer }}
       - path: /
         pathType: Prefix
         backend:
@@ -16,3 +28,21 @@ spec:
             name: {{ .Values.labels.api.name }}
             port:
               number: {{ .Values.ports.api }}
+  {{- else }}
+  - http:
+      paths:
+      - path: /indexer
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.labels.standaloneIndexer.name }}
+            port:
+              number: {{ .Values.ports.standaloneIndexer }}
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.labels.api.name }}
+            port:
+              number: {{ .Values.ports.api }}
+  {{- end }}

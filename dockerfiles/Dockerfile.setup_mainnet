@@ -1,0 +1,46 @@
+FROM debian:latest
+
+# TODO: Auto update the versions from .tool-versions
+SHELL ["/bin/bash", "-lc"]
+RUN apt-get update && apt-get install -y \
+  curl jq git xxd yq bc
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    echo 'source $HOME/.cargo/env' >> /root/.bashrc && \
+    echo 'source $HOME/.cargo/env' >> /root/.zshrc
+RUN git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0 && \
+    echo ". $HOME/.asdf/asdf.sh" >> /root/.bashrc && \
+    echo ". $HOME/.asdf/asdf.sh" >> /root/.zshrc
+
+RUN asdf plugin add scarb && \
+    asdf plugin add starkli && \
+    asdf plugin add starknet-foundry
+
+RUN asdf install scarb 2.11.1 && \
+    asdf global scarb 2.11.1
+
+RUN asdf install scarb 0.4.1 && \
+    asdf global scarb 0.4.1
+
+RUN asdf install starknet-foundry 0.42.0 && \
+    asdf global starknet-foundry 0.42.0
+
+# TODO: build container?
+
+WORKDIR /configs
+COPY ./configs/ .
+
+WORKDIR /onchain
+COPY ./onchain .
+# TODO: Exclude target/...
+
+WORKDIR /scripts
+COPY ./onchain/scripts/ .
+
+RUN cd /bin && ln -sf bash sh && chsh -s /bin/bash
+ENV SHELL=bash
+ENV PATH=$PATH:/root/.bin:/root/.local/bin/
+
+ENV UNIVERSAL_SIERRA_COMPILER=/root/.local/bin/universal-sierra-compiler
+
+ENTRYPOINT ["/bin/bash", "-lc"]
+CMD ["./docker_setup_mainnet.sh"]

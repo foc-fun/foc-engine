@@ -35,6 +35,8 @@ services:
       - CONFIG_PATH=/configs/config.yaml
       - MONGO_URI=mongodb://mongo:27017
       - AVNU_PAYMASTER_API_KEY=${AVNU_PAYMASTER_API_KEY}
+      - PAYMASTER_NETWORK=${PAYMASTER_NETWORK:-sepolia}
+      - PAYMASTER_API_URL=${PAYMASTER_API_URL:-}
     volumes:
       - ./abis:/app/abis
   indexer:

@@ -6,7 +6,11 @@ metadata:
     app: {{ .Values.labels.api.name }}
 data:
   MONGO_URI: mongodb://{{ .Values.labels.mongo.name }}:{{ .Values.ports.mongo }}
-  AVNU_PAYMASTER_API_KEY: {{ .Values.avnu.apiKey }}
+  AVNU_PAYMASTER_API_KEY: {{ .Values.paymaster.apiKey }}
+  PAYMASTER_NETWORK: {{ .Values.paymaster.network }}
+  {{- if .Values.paymaster.apiUrl }}
+  PAYMASTER_API_URL: {{ .Values.paymaster.apiUrl }}
+  {{- end }}
   CONFIG_PATH: /configs/config.yaml
   REGISTRY_CONTRACT_ADDRESS: {{ .Values.onchain.registryContractAddress }}
   ACCOUNTS_CONTRACT_ADDRESS: {{ .Values.onchain.accountContractAddress }}

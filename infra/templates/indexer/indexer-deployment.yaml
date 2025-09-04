@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.labels.indexer.name }}
-          image: {{ .Values.deployments.indexer.image }}:{{ .Chart.AppVersion }}-{{ .Values.deployments.sha }}
+          image: {{ .Values.deployments.indexer.image }}:{{ if .Values.deployments.indexer.tag }}{{ .Values.deployments.indexer.tag }}-{{ end }}{{ .Chart.AppVersion }}-{{ .Values.deployments.sha }}
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.ports.indexer }}

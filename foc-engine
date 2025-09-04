@@ -14,8 +14,11 @@ display_help() {
   echo "  run                 Run the FOC engine"
   echo "  clean               Clean up the FOC engine"
   echo "  version             Show the version of the FOC engine"
+  echo "  index               Index contract events from Starknet"
   echo
-  echo "Examples: $0 run --help"
+  echo "Examples:"
+  echo "  $0 run --help"
+  echo "  $0 index --contract 0x123... --event Transfer --order-by 1 --unique 1 --start-block 100000 --rpc https://..."
 }
 
 # Parse subcommand
@@ -43,6 +46,10 @@ case "$subcommand" in
     ;;
   version)
     echo "FOC engine version v0.2.1"
+    ;;
+  index)
+    echo "Starting FOC indexer..."
+    go run $PROJECT_ROOT/cmd/index/main.go "$@"
     ;;
   *)
     echo "Error: unknown subcommand '$subcommand'"

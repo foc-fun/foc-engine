@@ -1,0 +1,88 @@
+# Sepolia Testnet Configuration
+labels:
+  redis:
+    name: redis
+  mongo:
+    name: mongo
+  api:
+    name: api
+  indexer:
+    name: indexer
+  standaloneIndexer:
+    name: standalone-indexer
+
+ports:
+  redis: 6379
+  mongo: 27017
+  api: 8080
+  indexer: 8085
+  standaloneIndexer: 8081
+
+volumes:
+  redis:
+    name: redis-data
+    class: standard-rwo
+    storage: 10Gi
+  mongo:
+    name: mongo-data
+    class: standard-rwo
+    storage: 50Gi
+  standaloneIndexer:
+    name: standalone-indexer-data
+    class: standard-rwo
+    storage: 20Gi
+
+deployments:
+  staticIp: pow-game-sepolia-static-ip
+  sha: aabbccdd
+  redis:
+    replicas: 1
+    image: redis
+    tag: 7.2.4-alpine
+  mongo:
+    replicas: 1
+    image: mongo
+    tag: 8.0.11
+  api:
+    replicas: 1
+    image: brandonjroberts/foc-engine-api
+    tag: sepolia
+  indexer:
+    replicas: 0
+    image: brandonjroberts/foc-engine-indexer
+    tag: sepolia
+  standaloneIndexer:
+    replicas: 1
+    image: brandonjroberts/foc-engine-standalone-indexer
+    tag: ""
+
+# Sepolia-specific paymaster configuration
+paymaster:
+  network: sepolia
+  apiUrl: "https://sepolia.api.avnu.fi"
+  apiKey: abc-def
+
+# Sepolia contract addresses (current values from your existing deployment)
+onchain:
+  registryContractAddress: 0x0389f07362f4565d8d8966202ca1f411cec66f4e63d6a728d53067b6f490ca06
+  accountContractAddress: 0x07caa583a14ab8588b820f41d7bbe92bfc9b7f5c1f48de91a5ddead708dff814
+  accountsClassHash: 0x0577fa6444c4fad6a37897a7684db92cb9244e053440fdd71a076341ae7faa0a
+
+# Sepolia standalone indexer configuration
+standaloneIndexer:
+  contractAddress: "0x005401469540cd2bc67bf470d9c775bf53095669660a7f151f09bf7d458f936d"
+  eventName: "BalanceUpdated"
+  rpcUrl: ""  # Set via STANDALONE_INDEXER_RPC_URL environment variable
+  startBlock: "1779600"
+  orderBy: "3"
+  unique: "1"
+
+# Sepolia-specific ingress configuration
+ingress:
+  host: "sepolia-api.pow-game.com"
+  className: "gce"
+  managedCertificate:
+    enabled: true
+    name: "pow-game-sepolia-managed-cert"
+    domains:
+      - "sepolia-api.pow-game.com"

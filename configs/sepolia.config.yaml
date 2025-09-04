@@ -19,6 +19,9 @@ Indexer:
   Host: indexer
   Port: 8085
   StartAt: 86225
+Paymaster:
+  Network: sepolia
+  ApiUrl: "https://sepolia.api.avnu.fi"
 Modules:
   - AVNU_PAYMASTER
   - ACCOUNTS

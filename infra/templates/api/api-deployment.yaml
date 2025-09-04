@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.labels.api.name }}
-          image: {{ .Values.deployments.api.image }}:{{ .Chart.AppVersion }}-{{ .Values.deployments.sha }}
+          image: {{ .Values.deployments.api.image }}:{{ if .Values.deployments.api.tag }}{{ .Values.deployments.api.tag }}-{{ end }}{{ .Chart.AppVersion }}-{{ .Values.deployments.sha }}
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.ports.api }}

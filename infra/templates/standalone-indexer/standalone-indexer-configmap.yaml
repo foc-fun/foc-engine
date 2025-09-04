@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.labels.standaloneIndexer.name }}-config
+  labels:
+    app: {{ .Values.labels.standaloneIndexer.name }}
+data:
+  INDEXER_CONTRACT_ADDRESS: {{ .Values.standaloneIndexer.contractAddress | quote }}
+  INDEXER_EVENT_NAME: {{ .Values.standaloneIndexer.eventName | quote }}
+  INDEXER_RPC_URL: {{ .Values.standaloneIndexer.rpcUrl | quote }}
+  INDEXER_START_BLOCK: {{ .Values.standaloneIndexer.startBlock | quote }}
+  INDEXER_ORDER_BY: {{ .Values.standaloneIndexer.orderBy | quote }}
+  INDEXER_UNIQUE: {{ .Values.standaloneIndexer.unique | quote }}
+  INDEXER_DATA_DIR: "/data"
+  INDEXER_PORT: {{ .Values.ports.standaloneIndexer | quote }}

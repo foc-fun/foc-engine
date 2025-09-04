@@ -7,12 +7,15 @@ labels:
     name: api
   indexer:
     name: indexer
+  standaloneIndexer:
+    name: standalone-indexer
 
 ports:
   redis: 6379
   mongo: 27017
   api: 8080
   indexer: 8085
+  standaloneIndexer: 8081
 
 volumes:
   redis:
@@ -23,6 +26,10 @@ volumes:
     name: mongo-data
     class: standard-rwo
     storage: 50Gi
+  standaloneIndexer:
+    name: standalone-indexer-data
+    class: standard-rwo
+    storage: 20Gi
 
 deployments:
   staticIp: foc-engine-static-ip
@@ -38,14 +45,40 @@ deployments:
   api:
     replicas: 1
     image: brandonjroberts/foc-engine-api
+    tag: sepolia
   indexer:
     replicas: 1
     image: brandonjroberts/foc-engine-indexer
+    tag: sepolia
+  standaloneIndexer:
+    replicas: 1
+    image: brandonjroberts/foc-engine-standalone-indexer
+    tag: ""
 
-avnu:
+paymaster:
+  network: sepolia
+  apiUrl: "https://sepolia.api.avnu.fi"
   apiKey: abc-def
 
 onchain:
   registryContractAddress: 0x0389f07362f4565d8d8966202ca1f411cec66f4e63d6a728d53067b6f490ca06
   accountContractAddress: 0x07caa583a14ab8588b820f41d7bbe92bfc9b7f5c1f48de91a5ddead708dff814
   accountsClassHash: 0x0577fa6444c4fad6a37897a7684db92cb9244e053440fdd71a076341ae7faa0a
+
+standaloneIndexer:
+  contractAddress: "0x005401469540cd2bc67bf470d9c775bf53095669660a7f151f09bf7d458f936d"
+  eventName: "BalanceUpdated"
+  rpcUrl: "wss://starknet-sepolia.blastapi.io/b6d0b8b2-2d15-4d8b-b6f4-9de752e7d85f"
+  startBlock: "1779600"
+  orderBy: "3"
+  unique: "1"
+
+# Ingress configuration
+ingress:
+  host: "api.pow-game.com"
+  className: "gce"
+  managedCertificate:
+    enabled: true
+    name: "pow-game-managed-cert"
+    domains:
+      - "api.pow-game.com"
