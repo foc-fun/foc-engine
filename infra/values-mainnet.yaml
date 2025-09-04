@@ -46,12 +46,15 @@ deployments:
   api:
     replicas: 1
     image: brandonjroberts/foc-engine-api
+    tag: mainnet
   indexer:
     replicas: 0
     image: brandonjroberts/foc-engine-indexer
+    tag: mainnet
   standaloneIndexer:
     replicas: 1
     image: brandonjroberts/foc-engine-standalone-indexer
+    tag: ""
 
 # Mainnet paymaster configuration
 paymaster:

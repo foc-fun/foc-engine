@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.labels.standaloneIndexer.name }}
-          image: {{ .Values.deployments.standaloneIndexer.image }}:{{ .Chart.AppVersion }}-{{ .Values.deployments.sha }}
+          image: {{ .Values.deployments.standaloneIndexer.image }}:{{ if .Values.deployments.standaloneIndexer.tag }}{{ .Values.deployments.standaloneIndexer.tag }}-{{ end }}{{ .Chart.AppVersion }}-{{ .Values.deployments.sha }}
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.ports.standaloneIndexer }}

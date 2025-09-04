@@ -45,12 +45,15 @@ deployments:
   api:
     replicas: 1
     image: brandonjroberts/foc-engine-api
+    tag: sepolia
   indexer:
     replicas: 1
     image: brandonjroberts/foc-engine-indexer
+    tag: sepolia
   standaloneIndexer:
     replicas: 1
     image: brandonjroberts/foc-engine-standalone-indexer
+    tag: ""
 
 paymaster:
   network: sepolia
