@@ -1,4 +1,4 @@
-FROM golang:1.23.4-alpine AS builder
+FROM --platform=linux/amd64 golang:1.23.4-alpine AS builder
 
 RUN apk add --no-cache bash curl git jq yq
 
@@ -11,7 +11,7 @@ COPY ./ .
 # Build the standalone indexer binary
 RUN go build -o foc-engine-index ./cmd/index/main.go
 
-FROM alpine:latest
+FROM --platform=linux/amd64 alpine:latest
 
 RUN apk add --no-cache ca-certificates
 
