@@ -26,19 +26,6 @@ spec:
           volumeMounts:
             - name: data-storage
               mountPath: /data
-          # Health checks
-          livenessProbe:
-            httpGet:
-              path: /indexer/status
-              port: {{ .Values.ports.standaloneIndexer }}
-            initialDelaySeconds: 30
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /indexer/status
-              port: {{ .Values.ports.standaloneIndexer }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
           # Resource limits
           resources:
             requests:
