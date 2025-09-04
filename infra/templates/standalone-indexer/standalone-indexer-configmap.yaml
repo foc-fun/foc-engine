@@ -12,3 +12,4 @@ data:
   INDEXER_ORDER_BY: {{ .Values.standaloneIndexer.orderBy | quote }}
   INDEXER_UNIQUE: {{ .Values.standaloneIndexer.unique | quote }}
   INDEXER_DATA_DIR: "/data"
+  INDEXER_PORT: {{ .Values.ports.standaloneIndexer | quote }}

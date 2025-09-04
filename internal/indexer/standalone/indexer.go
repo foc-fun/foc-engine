@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -292,14 +293,18 @@ func (idx *Indexer) startHTTPServer() {
 		})
 	})
 	
-	port := 8080
-	fmt.Printf("HTTP server listening on :%d\n", port)
+	// Get port from environment variable, default to 8081
+	port := os.Getenv("INDEXER_PORT")
+  if port == "" {
+    port = "8081"
+  }
+	fmt.Printf("HTTP server listening on :%s\n", port)
 	fmt.Println("Query endpoints:")
-	fmt.Printf("  http://localhost:%d/status - Get indexer status\n", port)
-	fmt.Printf("  http://localhost:%d/events - Get all indexed events\n", port)
-	fmt.Printf("  http://localhost:%d/events-latest-ordered - Get latest events with unique constraint\n", port)
+	fmt.Printf("  http://localhost:%s/status - Get indexer status\n", port)
+	fmt.Printf("  http://localhost:%s/events - Get all indexed events\n", port)
+	fmt.Printf("  http://localhost:%s/events-latest-ordered - Get latest events with unique constraint\n", port)
 	
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 		fmt.Printf("HTTP server error: %v\n", err)
 	}
 }

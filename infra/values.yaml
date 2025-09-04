@@ -15,7 +15,7 @@ ports:
   mongo: 27017
   api: 8080
   indexer: 8085
-  standaloneIndexer: 8080
+  standaloneIndexer: 8081
 
 volumes:
   redis:
