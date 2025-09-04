@@ -1,0 +1,278 @@
+FOC Engine Multi-Namespace Deployment Instructions
+===================================================
+
+This guide covers deploying FOC Engine to both Sepolia (testnet) and Mainnet
+in separate Kubernetes namespaces.
+
+### Prerequisites
+-----------------
+1. Docker Hub account (replace 'brandonjroberts' with your username in all relevant files)
+2. Starkli configured for both networks
+3. AVNU API keys for both Sepolia and Mainnet
+4. Access to GCP Kubernetes cluster
+5. kubectl and kubens installed
+
+### Network-Specific Files
+--------------------------
+- Contract Deployment Scripts:
+  - Sepolia: ./onchain/scripts/deploy_sepolia.sh
+  - Mainnet: ./onchain/scripts/deploy_mainnet.sh
+
+- Values Files:
+  - Sepolia: infra/values-sepolia.yaml
+  - Mainnet: infra/values-mainnet.yaml
+
+- Docker Setup Scripts:
+  - Sepolia: ./onchain/scripts/docker_setup_sepolia.sh
+  - Mainnet: ./onchain/scripts/docker_setup_mainnet.sh
+
+### 1. Deploy Smart Contracts
+------------------------------
+Deploy contracts to the appropriate network:
+
+## For Sepolia:
+```bash
+# Setup Sepolia starkli environment
+export STARKNET_KEYSTORE=$HOME/.starkli-sepolia/starkli-keystore.json
+export STARKNET_ACCOUNT=$HOME/.starkli-sepolia/starkli-account.json
+
+# Deploy to Sepolia
+./onchain/scripts/deploy_sepolia.sh
+```
+
+## For Mainnet:
+```bash
+# Setup Mainnet starkli environment
+export STARKNET_KEYSTORE=$HOME/.starkli-mainnet/starkli-keystore.json
+export STARKNET_ACCOUNT=$HOME/.starkli-mainnet/starkli-account.json
+
+# Deploy to Mainnet
+./onchain/scripts/deploy_mainnet.sh
+```
+
+### 2. Update Configuration Files
+----------------------------------
+After deploying contracts, update the respective values files:
+
+## For Sepolia (infra/values-sepolia.yaml):
+- Update registryContractAddress
+- Update accountContractAddress
+- Update accountsClassHash
+- Update standaloneIndexer.contractAddress
+
+## For Mainnet (infra/values-mainnet.yaml):
+- Update registryContractAddress
+- Update accountContractAddress
+- Update accountsClassHash
+- Update standaloneIndexer.contractAddress
+
+### 3. Build and Push Docker Images
+------------------------------------
+Update appVersion in infra/Chart.yaml, then:
+
+## Build images for both networks:
+```bash
+# Build all images (sepolia, mainnet, and standalone)
+make docker-build
+
+# Or build separately:
+make docker-build-sepolia
+make docker-build-mainnet
+make docker-build-standalone
+```
+
+## Push images to Docker Hub:
+```bash
+# Push all images
+make docker-push
+
+# Or push separately:
+make docker-push-sepolia
+make docker-push-mainnet
+make docker-push-standalone
+```
+
+### 4. Deploy to Kubernetes Clusters
+-------------------------------------
+Connect to your GCP Kubernetes cluster:
+
+1. Open GCP Cloud Console
+2. Navigate to Kubernetes Engine
+3. Connect to your cluster
+
+## Deploy to Sepolia Namespace:
+```bash
+# Switch to sepolia namespace (or create it)
+kubens foc-engine-sepolia
+
+# For a fresh deployment (new contracts):
+make helm-uninstall-sepolia  # If exists
+AVNU_API_KEY=<your-sepolia-api-key> \
+STANDALONE_INDEXER_RPC_URL=<your-sepolia-rpc-url> \
+make helm-install-sepolia
+
+# For updates (only backend code changed):
+AVNU_API_KEY=<your-sepolia-api-key> \
+STANDALONE_INDEXER_RPC_URL=<your-sepolia-rpc-url> \
+make helm-upgrade-sepolia
+
+# Verify deployment
+kubectl get all -n foc-engine-sepolia
+kubectl get ingress -n foc-engine-sepolia
+```
+
+## Deploy to Mainnet Namespace:
+```bash
+# Switch to mainnet namespace (or create it)
+kubens foc-engine-mainnet
+
+# For a fresh deployment (new contracts):
+make helm-uninstall-mainnet  # If exists
+AVNU_API_KEY=<your-mainnet-api-key> \
+STANDALONE_INDEXER_RPC_URL=<your-mainnet-rpc-url> \
+make helm-install-mainnet
+
+# For updates (only backend code changed):
+AVNU_API_KEY=<your-mainnet-api-key> \
+STANDALONE_INDEXER_RPC_URL=<your-mainnet-rpc-url> \
+make helm-upgrade-mainnet
+
+# Verify deployment
+kubectl get all -n foc-engine-mainnet
+kubectl get ingress -n foc-engine-mainnet
+```
+
+### 5. Verify Deployments
+-------------------------
+## Check Sepolia deployment:
+```bash
+# Ensure all pods are running
+kubectl get pods -n foc-engine-sepolia
+
+# Check ingress (should show sepolia-api.pow-game.com)
+kubectl get ingress -n foc-engine-sepolia
+
+# Test the API
+curl https://sepolia-api.pow-game.com/health
+```
+
+## Check Mainnet deployment:
+```bash
+# Ensure all pods are running
+kubectl get pods -n foc-engine-mainnet
+
+# Check ingress (should show api.pow-game.com)
+kubectl get ingress -n foc-engine-mainnet
+
+# Test the API
+curl https://api.pow-game.com/health
+```
+
+### 6. Post-Deployment Configuration
+-------------------------------------
+If needed, register contracts with the API:
+
+## For Sepolia:
+```bash
+# Replace addresses with your deployed contract addresses
+curl https://sepolia-api.pow-game.com/registry/add-registry-contract -d \
+  '{"address":"0x...", "subscribeEvents":"false"}'
+
+curl https://sepolia-api.pow-game.com/accounts/add-accounts-contract -d \
+  '{"address":"0x...", "class_hash":"0x..."}'
+```
+
+## For Mainnet:
+```bash
+# Replace addresses with your deployed contract addresses
+curl https://api.pow-game.com/registry/add-registry-contract -d \
+  '{"address":"0x...", "subscribeEvents":"false"}'
+
+curl https://api.pow-game.com/accounts/add-accounts-contract -d \
+  '{"address":"0x...", "class_hash":"0x..."}'
+```
+
+### Troubleshooting
+-------------------
+## If ingress is not created:
+```bash
+# For Sepolia
+AVNU_API_KEY=<key> STANDALONE_INDEXER_RPC_URL=<url> make helm-upgrade-sepolia
+
+# For Mainnet
+AVNU_API_KEY=<key> STANDALONE_INDEXER_RPC_URL=<url> make helm-upgrade-mainnet
+```
+
+## View logs:
+```bash
+# Sepolia logs
+kubectl logs -f deployment/api -n foc-engine-sepolia
+kubectl logs -f deployment/standalone-indexer -n foc-engine-sepolia
+
+# Mainnet logs
+kubectl logs -f deployment/api -n foc-engine-mainnet
+kubectl logs -f deployment/standalone-indexer -n foc-engine-mainnet
+```
+
+## Check resource usage:
+```bash
+kubectl top pods -n foc-engine-sepolia
+kubectl top pods -n foc-engine-mainnet
+```
+
+### Environment Variables Summary
+----------------------------------
+Required for deployments:
+- AVNU_API_KEY: Different keys for Sepolia and Mainnet
+- STANDALONE_INDEXER_RPC_URL: RPC endpoints for each network
+- STARKNET_KEYSTORE: Path to keystore file (network-specific)
+- STARKNET_ACCOUNT: Path to account file (network-specific)
+
+### Key Differences Between Networks
+-------------------------------------
+1. Namespaces:
+   - Sepolia: foc-engine-sepolia
+   - Mainnet: foc-engine-mainnet
+
+2. Ingress hosts:
+   - Sepolia: sepolia-api.pow-game.com
+   - Mainnet: api.pow-game.com
+
+3. Static IPs:
+   - Sepolia: pow-game-sepolia-static-ip
+   - Mainnet: pow-game-mainnet-static-ip
+
+4. Storage sizes (volumes):
+   - Redis: 10Gi (Sepolia) vs 20Gi (Mainnet)
+   - MongoDB: 50Gi (Sepolia) vs 100Gi (Mainnet)
+   - Standalone Indexer: 20Gi (Sepolia) vs 50Gi (Mainnet)
+
+5. Paymaster URLs:
+   - Sepolia: https://sepolia.api.avnu.fi
+   - Mainnet: https://starknet.paymaster.avnu.fi
+
+6. Docker image tags:
+   - Sepolia: sepolia-<version>-<sha>
+   - Mainnet: mainnet-<version>-<sha>
+
+### Quick Reference Commands
+----------------------------
+# Sepolia operations
+make helm-install-sepolia    # Fresh install
+make helm-upgrade-sepolia    # Update deployment
+make helm-uninstall-sepolia  # Remove deployment
+make helm-template-sepolia   # Preview manifests
+
+# Mainnet operations
+make helm-install-mainnet    # Fresh install
+make helm-upgrade-mainnet    # Update deployment
+make helm-uninstall-mainnet  # Remove deployment
+make helm-template-mainnet   # Preview manifests
+
+# Docker operations
+make docker-build             # Build all images
+make docker-push              # Push all images
+
+# Check deployments
+kubectl get all -n foc-engine-sepolia
+kubectl get all -n foc-engine-mainnet
