@@ -81,3 +81,8 @@ standaloneIndexer:
 ingress:
   host: "sepolia-api.pow-game.com"
   className: "gce"
+  managedCertificate:
+    enabled: true
+    name: "pow-game-sepolia-managed-cert"
+    domains:
+      - "sepolia-api.pow-game.com"

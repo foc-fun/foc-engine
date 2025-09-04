@@ -72,3 +72,13 @@ standaloneIndexer:
   startBlock: "1779600"
   orderBy: "3"
   unique: "1"
+
+# Ingress configuration
+ingress:
+  host: "api.pow-game.com"
+  className: "gce"
+  managedCertificate:
+    enabled: true
+    name: "pow-game-managed-cert"
+    domains:
+      - "api.pow-game.com"

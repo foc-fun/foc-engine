@@ -81,3 +81,8 @@ standaloneIndexer:
 ingress:
   host: "api.pow-game.com"
   className: "gce"
+  managedCertificate:
+    enabled: true
+    name: "pow-game-mainnet-managed-cert"
+    domains:
+      - "api.pow-game.com"
