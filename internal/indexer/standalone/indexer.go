@@ -224,7 +224,7 @@ func parseQueryParams(r *http.Request) (page int, pageLength int, order string, 
 
 // startHTTPServer starts a simple HTTP server to query indexed data
 func (idx *Indexer) startHTTPServer() {
-	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/indexer/events", func(w http.ResponseWriter, r *http.Request) {
 		// Parse query parameters
 		page, pageLength, order, err := parseQueryParams(r)
 		if err != nil {
@@ -251,7 +251,7 @@ func (idx *Indexer) startHTTPServer() {
 		})
 	})
 	
-	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/indexer/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"running":             idx.running,
@@ -263,7 +263,7 @@ func (idx *Indexer) startHTTPServer() {
 		})
 	})
 	
-	http.HandleFunc("/events-latest-ordered", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/indexer/events-latest-ordered", func(w http.ResponseWriter, r *http.Request) {
 		// Parse query parameters
 		page, pageLength, order, err := parseQueryParams(r)
 		if err != nil {
@@ -300,9 +300,9 @@ func (idx *Indexer) startHTTPServer() {
   }
 	fmt.Printf("HTTP server listening on :%s\n", port)
 	fmt.Println("Query endpoints:")
-	fmt.Printf("  http://localhost:%s/status - Get indexer status\n", port)
-	fmt.Printf("  http://localhost:%s/events - Get all indexed events\n", port)
-	fmt.Printf("  http://localhost:%s/events-latest-ordered - Get latest events with unique constraint\n", port)
+	fmt.Printf("  http://localhost:%s/indexer/status - Get indexer status\n", port)
+	fmt.Printf("  http://localhost:%s/indexer/events - Get all indexed events\n", port)
+	fmt.Printf("  http://localhost:%s/indexer/events-latest-ordered - Get latest events with unique constraint\n", port)
 	
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 		fmt.Printf("HTTP server error: %v\n", err)
