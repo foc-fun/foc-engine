@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/b-j-roberts/foc-engine/internal/config"
 	"github.com/b-j-roberts/foc-engine/internal/db/mongo"
@@ -13,10 +12,6 @@ import (
 
 func main() {
 	config.InitConfig()
-
-	// TODO: Remove this after testing
-	// Sleep for 10 seconds
-	time.Sleep(10 * time.Second)
 
 	if mongo.ShouldConnectMongo() {
 		mongo.InitMongoDB()

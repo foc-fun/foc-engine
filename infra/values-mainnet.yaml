@@ -59,7 +59,7 @@ deployments:
 # Mainnet paymaster configuration
 paymaster:
   network: mainnet
-  apiUrl: "https://starknet.paymaster.avnu.fi"  # Mainnet paymaster URL
+  apiUrl: "https://starknet.api.avnu.fi"  # Mainnet paymaster URL
   apiKey: abc-def  # TODO: Replace with actual Mainnet API key from env
 
 # Mainnet contract addresses (TODO: Update with actual mainnet deployed addresses)

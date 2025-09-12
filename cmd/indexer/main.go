@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/b-j-roberts/foc-engine/internal/config"
 	"github.com/b-j-roberts/foc-engine/internal/db/mongo"
@@ -16,8 +15,6 @@ import (
 func main() {
 	config.InitConfig()
 
-	// Sleep for 10 seconds
-	time.Sleep(10 * time.Second)
 	err := provider.InitProvider(registry.ProcessStarknetEventData, true)
 	if err != nil {
 		fmt.Println("Error initializing provider:", err)

@@ -249,7 +249,7 @@ Required for deployments:
 
 5. Paymaster URLs:
    - Sepolia: https://sepolia.api.avnu.fi
-   - Mainnet: https://starknet.paymaster.avnu.fi
+   - Mainnet: https://starknet.api.avnu.fi
 
 6. Docker image tags:
    - Sepolia: sepolia-<version>-<sha>
