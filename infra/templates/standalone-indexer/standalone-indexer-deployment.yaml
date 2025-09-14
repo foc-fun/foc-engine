@@ -29,13 +29,13 @@ spec:
           # Health checks
           livenessProbe:
             httpGet:
-              path: /indexer/events-latest-ordered?order=desc&pageLength=1
+              path: /indexer/events-latest-ordered
               port: {{ .Values.ports.standaloneIndexer }}
             initialDelaySeconds: 5
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /indexer/events-latest-ordered?order=desc&pageLength=1
+              path: /indexer/events-latest-ordered
               port: {{ .Values.ports.standaloneIndexer }}
             initialDelaySeconds: 5
             periodSeconds: 5

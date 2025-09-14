@@ -4,6 +4,8 @@ metadata:
   name: {{ .Values.labels.standaloneIndexer.name }}
   labels:
     app: {{ .Values.labels.standaloneIndexer.name }}
+  annotations:
+    cloud.google.com/backend-config: '{"default": "{{ .Values.labels.standaloneIndexer.name }}-backendconfig"}'
 spec:
   type: NodePort
   ports:
