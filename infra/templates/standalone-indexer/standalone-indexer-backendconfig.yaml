@@ -5,7 +5,7 @@ metadata:
 spec:
   healthCheck:
     checkIntervalSec: 10
-    timeoutSec: 5
+    timeoutSec: 10
     healthyThreshold: 2
     unhealthyThreshold: 3
     type: HTTP
