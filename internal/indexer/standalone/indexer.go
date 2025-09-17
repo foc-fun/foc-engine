@@ -251,6 +251,15 @@ func (idx *Indexer) startHTTPServer() {
 		})
 	})
 	
+	// Simple health check endpoint for load balancer
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "healthy",
+			"running": idx.running,
+		})
+	})
+
 	http.HandleFunc("/indexer/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{

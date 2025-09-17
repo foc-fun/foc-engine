@@ -9,5 +9,5 @@ spec:
     healthyThreshold: 2
     unhealthyThreshold: 3
     type: HTTP
-    requestPath: /indexer/status
+    requestPath: /health
     port: {{ .Values.ports.standaloneIndexer }}
